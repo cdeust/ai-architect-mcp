@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+dist/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Node (for any future JS tooling)
+node_modules/
+.npm/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Secrets — NEVER committed
+.env
+.env.*
+*.pem
+*.key
+secrets/
+credentials/
+
+# Xcode (reference only, not in this repo)
+*.xcodeproj
+*.xcworkspace
+DerivedData/
+
+# Claude
+.claude/cache/
+
+# Build outputs
+build/
+dist/
+*.o
+*.a
