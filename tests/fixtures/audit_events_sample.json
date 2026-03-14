@@ -1,0 +1,52 @@
+[
+  {
+    "event_id": "evt-001",
+    "session_id": "sess-001",
+    "stage_id": 0,
+    "tool_name": "ai_architect_health_check",
+    "outcome": "pass",
+    "message": "Health check passed",
+    "timestamp": "2026-03-14T10:00:00Z",
+    "metadata": {}
+  },
+  {
+    "event_id": "evt-002",
+    "session_id": "sess-001",
+    "stage_id": 1,
+    "tool_name": "ai_architect_discovery",
+    "outcome": "pass",
+    "message": "Discovery completed",
+    "timestamp": "2026-03-14T10:05:00Z",
+    "metadata": {}
+  },
+  {
+    "event_id": "evt-003",
+    "session_id": "sess-001",
+    "stage_id": 2,
+    "tool_name": "ai_architect_impact_analysis",
+    "outcome": "fail",
+    "message": "Impact threshold exceeded",
+    "timestamp": "2026-03-14T10:10:00Z",
+    "metadata": {"threshold": "0.8"}
+  },
+  {
+    "event_id": "evt-004",
+    "session_id": "sess-002",
+    "stage_id": 0,
+    "tool_name": "ai_architect_health_check",
+    "outcome": "error",
+    "message": "Connection timeout",
+    "timestamp": "2026-03-14T09:00:00Z",
+    "metadata": {}
+  },
+  {
+    "event_id": "evt-005",
+    "session_id": "sess-001",
+    "stage_id": 3,
+    "tool_name": "ai_architect_integration",
+    "outcome": "skip",
+    "message": "Integration skipped — no upstream changes",
+    "timestamp": "2026-03-14T10:15:00Z",
+    "metadata": {}
+  }
+]

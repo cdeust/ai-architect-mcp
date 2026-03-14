@@ -1,0 +1,1 @@
+{"estimates": [{"source": "thought_buffer", "value": 0.9, "uncertainty": 0.03, "reasoning": "high match"}, {"source": "collaborative_inference", "value": 0.3, "uncertainty": 0.15, "reasoning": "low agreement"}]}

@@ -1,0 +1,29 @@
+[server]
+host = "127.0.0.1"
+port = 8080
+log_level = "info"
+
+[verification]
+hor_rule_count = 64
+max_debate_rounds = 3
+consensus_algorithm = "weighted_average"
+confidence_threshold = 0.7
+
+[prompting]
+default_strategy = "adaptive_expansion"
+max_thinking_depth = 5
+thought_buffer_size = 10
+
+[context]
+max_stages = 11
+artifact_persist_dir = ".ai-architect/artifacts"
+session_persist_dir = ".ai-architect/sessions"
+
+[adapters]
+git_repo_path = "."
+github_repo = ""
+project_root = "."
+
+[logging]
+format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+file = ""

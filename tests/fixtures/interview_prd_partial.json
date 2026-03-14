@@ -1,0 +1,14 @@
+{
+  "title": "Incomplete Feature PRD",
+  "content": "## Overview\nThis document describes various things about the system.\nThere are several components and some integrations.\n\n## Requirements\nFR-001: The system should handle stuff\nFR-003: Users can do things\n\n## User Stories\nSTORY-001: Users want to use the system.\nSTORY-002: Admins want to manage the system.\n\n## Technical\nUses generally accepted patterns and mostly standard tools.\nTBD: architecture decisions pending.",
+  "sections": [
+    {"name": "Overview"},
+    {"name": "Requirements"},
+    {"name": "User Stories"},
+    {"name": "Technical"}
+  ],
+  "requirements": [
+    {"id": "FR-001", "text": "The system should handle stuff"},
+    {"id": "FR-003", "text": "Users can do things"}
+  ]
+}

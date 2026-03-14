@@ -1,0 +1,20 @@
+[
+  {
+    "total_tokens": 100000,
+    "used_tokens": 50000,
+    "expected_level": "l3_full",
+    "expected_compact": false
+  },
+  {
+    "total_tokens": 100000,
+    "used_tokens": 71000,
+    "expected_level": "l2_summary",
+    "expected_compact": false
+  },
+  {
+    "total_tokens": 100000,
+    "used_tokens": 94000,
+    "expected_level": "l1_config",
+    "expected_compact": true
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "nodes": [
+    {"node_id": "550e8400-e29b-41d4-a716-446655440001", "claim_id": "550e8400-e29b-41d4-a716-446655440010", "label": "User authentication required", "node_type": "requirement"},
+    {"node_id": "550e8400-e29b-41d4-a716-446655440002", "claim_id": "550e8400-e29b-41d4-a716-446655440011", "label": "OAuth 2.0 specification", "node_type": "specification"},
+    {"node_id": "550e8400-e29b-41d4-a716-446655440003", "claim_id": "550e8400-e29b-41d4-a716-446655440012", "label": "AuthService implementation", "node_type": "implementation"}
+  ],
+  "edges": [
+    {"source_id": "550e8400-e29b-41d4-a716-446655440001", "target_id": "550e8400-e29b-41d4-a716-446655440002", "relationship": "implies", "weight": 0.95},
+    {"source_id": "550e8400-e29b-41d4-a716-446655440002", "target_id": "550e8400-e29b-41d4-a716-446655440003", "relationship": "implements", "weight": 0.9}
+  ]
+}

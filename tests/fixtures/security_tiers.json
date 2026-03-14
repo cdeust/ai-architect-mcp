@@ -1,0 +1,28 @@
+{
+  "test_cases": [
+    {"command": "ls -la", "expected_tier": 1, "expected_action": "allow"},
+    {"command": "cat /etc/hosts", "expected_tier": 1, "expected_action": "allow"},
+    {"command": "grep -r pattern .", "expected_tier": 1, "expected_action": "allow"},
+    {"command": "uname -a", "expected_tier": 2, "expected_action": "allow"},
+    {"command": "which python", "expected_tier": 2, "expected_action": "allow"},
+    {"command": "pip list", "expected_tier": 3, "expected_action": "allow"},
+    {"command": "npm ls", "expected_tier": 3, "expected_action": "allow"},
+    {"command": "touch new_file.txt", "expected_tier": 4, "expected_action": "allow"},
+    {"command": "mkdir -p new_dir", "expected_tier": 4, "expected_action": "allow"},
+    {"command": "git push origin main", "expected_tier": 5, "expected_action": "allow"},
+    {"command": "git commit -m 'update'", "expected_tier": 5, "expected_action": "allow"},
+    {"command": "npm publish", "expected_tier": 5, "expected_action": "allow"},
+    {"command": "docker run ubuntu", "expected_tier": 6, "expected_action": "ask"},
+    {"command": "docker build .", "expected_tier": 6, "expected_action": "ask"},
+    {"command": "chmod 755 script.sh", "expected_tier": 7, "expected_action": "ask"},
+    {"command": "chown root:root file", "expected_tier": 7, "expected_action": "ask"},
+    {"command": "kill -9 1234", "expected_tier": 8, "expected_action": "block"},
+    {"command": "pkill python", "expected_tier": 8, "expected_action": "block"},
+    {"command": "killall node", "expected_tier": 8, "expected_action": "block"},
+    {"command": "tee /etc/passwd", "expected_tier": 9, "expected_action": "block"},
+    {"command": "mv file /etc/config", "expected_tier": 9, "expected_action": "block"},
+    {"command": "rm -rf /", "expected_tier": 10, "expected_action": "block"},
+    {"command": "mkfs.ext4 /dev/sda1", "expected_tier": 10, "expected_action": "block"},
+    {"command": "dd if=/dev/zero of=/dev/sda", "expected_tier": 10, "expected_action": "block"}
+  ]
+}

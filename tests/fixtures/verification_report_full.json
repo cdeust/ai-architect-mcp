@@ -1,0 +1,37 @@
+{
+  "claims": [
+    {
+      "claim_id": "550e8400-e29b-41d4-a716-446655440001",
+      "content": "The system implements OAuth 2.0 authentication",
+      "claim_type": "atomic_fact",
+      "source": "decomposition",
+      "priority": 85,
+      "metadata": {}
+    }
+  ],
+  "evaluations": [
+    {
+      "claim_id": "550e8400-e29b-41d4-a716-446655440001",
+      "evaluator_id": "nli_evaluator",
+      "score": 0.92,
+      "confidence": 0.88,
+      "verdict": "pass",
+      "reasoning": "Claim is supported by the technical specification",
+      "evidence": ["Section 4.2 describes OAuth 2.0 flow"]
+    }
+  ],
+  "hor_results": [
+    {
+      "rule_id": 1,
+      "rule_name": "title_exists",
+      "category": "structural",
+      "passed": true,
+      "message": "Title present and under 200 characters",
+      "severity": "critical",
+      "penalty": 0.15
+    }
+  ],
+  "overall_score": 0.88,
+  "algorithm_used": "weighted_average",
+  "timestamp": "2025-03-01T12:00:00Z"
+}

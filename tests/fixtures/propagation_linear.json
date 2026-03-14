@@ -1,0 +1,10 @@
+{
+  "source_module": "auth",
+  "dependency_graph": {
+    "auth": ["api"],
+    "api": ["web"],
+    "web": ["ui"]
+  },
+  "expected_paths": 3,
+  "expected_max_depth": 3
+}

@@ -1,0 +1,11 @@
+{
+  "session_id": "sess-001",
+  "finding_id": "FIND-TEST-001",
+  "current_stage": 3,
+  "status": "running",
+  "started_at": "2026-03-14T10:00:00Z",
+  "updated_at": "2026-03-14T10:30:00Z",
+  "completed_stages": [0, 1, 2],
+  "error_message": null,
+  "metadata": {"source": "test"}
+}

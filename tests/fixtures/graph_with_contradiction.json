@@ -1,0 +1,9 @@
+{
+  "nodes": [
+    {"node_id": "550e8400-e29b-41d4-a716-446655440001", "claim_id": "550e8400-e29b-41d4-a716-446655440010", "label": "Must encrypt", "node_type": "requirement"},
+    {"node_id": "550e8400-e29b-41d4-a716-446655440002", "claim_id": "550e8400-e29b-41d4-a716-446655440011", "label": "Store plaintext", "node_type": "specification"}
+  ],
+  "edges": [
+    {"source_id": "550e8400-e29b-41d4-a716-446655440001", "target_id": "550e8400-e29b-41d4-a716-446655440002", "relationship": "contradicts", "weight": 0.95}
+  ]
+}

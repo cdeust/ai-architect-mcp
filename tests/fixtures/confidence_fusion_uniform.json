@@ -1,0 +1,1 @@
+{"estimates": [{"source": "thought_buffer", "value": 0.8, "uncertainty": 0.05, "reasoning": "template match"}, {"source": "adaptive_expansion", "value": 0.8, "uncertainty": 0.05, "reasoning": "exploration"}, {"source": "metacognitive", "value": 0.8, "uncertainty": 0.05, "reasoning": "monitoring"}]}

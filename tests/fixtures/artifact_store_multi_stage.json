@@ -1,0 +1,7 @@
+{
+  "stages": {
+    "0": {"finding_id": "FIND-001", "artifact": {"health_check": "passed"}},
+    "1": {"finding_id": "FIND-001", "artifact": {"signals_detected": 5}},
+    "2": {"finding_id": "FIND-001", "artifact": {"compound_score": 0.82}}
+  }
+}

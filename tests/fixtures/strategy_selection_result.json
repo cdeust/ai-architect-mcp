@@ -1,0 +1,17 @@
+{
+  "selected": {
+    "strategy_id": "recursive_refinement",
+    "name": "Recursive Refinement",
+    "description": "Iteratively refine outputs using self-evaluation loops",
+    "research_paper": "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs",
+    "research_institution": "DeepSeek",
+    "year": 2025,
+    "improvement_claim": "+32% MATH-500",
+    "tier": 1,
+    "weight": 1.0,
+    "applicable_characteristics": ["mathematical_reasoning", "iterative_refinement"]
+  },
+  "reason": "Best match for mathematical reasoning with iterative refinement requirements",
+  "score": 0.92,
+  "alternatives": []
+}

@@ -8,13 +8,28 @@ root.
 This is the hexagonal architecture boundary. Everything inside (stages,
 algorithms, scoring) depends on ports. Everything outside (git, Xcode,
 GitHub, filesystem) implements ports.
+
+FileSystemPort and StageContextPort are defined in ports_data.py
+(split to respect the 300-line limit) and re-exported here.
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from pathlib import Path
 from typing import Any
+
+from ai_architect_mcp._adapters.ports_data import (
+    FileSystemPort,
+    StageContextPort,
+)
+
+__all__ = [
+    "FileSystemPort",
+    "GitHubOperationsPort",
+    "GitOperationsPort",
+    "StageContextPort",
+    "XcodeOperationsPort",
+]
 
 
 class GitOperationsPort(ABC):
@@ -33,7 +48,7 @@ class GitOperationsPort(ABC):
             base: Base branch to create from. Defaults to main.
 
         Returns:
-            The full branch reference (e.g., refs/heads/feature/finding-123).
+            The full branch reference.
         """
         ...
 
@@ -86,12 +101,32 @@ class GitOperationsPort(ABC):
         """
         ...
 
+    @abstractmethod
+    async def reset(self, ref: str) -> None:
+        """Reset current branch to ref.
+
+        Args:
+            ref: The git ref to reset to (commit SHA, branch, tag).
+        """
+        ...
+
+    @abstractmethod
+    async def reset_branch(self, branch: str, to_ref: str) -> None:
+        """Reset a specific branch to a ref.
+
+        Args:
+            branch: The branch to reset.
+            to_ref: The ref to reset the branch to.
+        """
+        ...
+
 
 class XcodeOperationsPort(ABC):
-    """Port for Xcode build and test operations.
+    """Port for Xcode build, test, and bridge operations.
 
     All Xcode interactions go through this port. The concrete adapter
-    wraps the Xcode MCP bridge (28 external tools).
+    wraps the Xcode MCP bridge for read/write/grep and xcodebuild
+    for build/test/preview.
     """
 
     @abstractmethod
@@ -110,7 +145,7 @@ class XcodeOperationsPort(ABC):
         ...
 
     @abstractmethod
-    async def test(
+    async def run_tests(
         self, scheme: str, test_plan: str | None = None
     ) -> dict[str, Any]:
         """Run tests for an Xcode scheme.
@@ -133,6 +168,43 @@ class XcodeOperationsPort(ABC):
 
         Returns:
             PNG image bytes of the rendered preview.
+        """
+        ...
+
+    @abstractmethod
+    async def read(self, path: str) -> str:
+        """Read via Xcode MCP bridge (XcodeRead).
+
+        Args:
+            path: Path to the file to read.
+
+        Returns:
+            File contents as a string.
+        """
+        ...
+
+    @abstractmethod
+    async def write(self, path: str, content: str) -> None:
+        """Write via Xcode MCP bridge (XcodeWrite).
+
+        Args:
+            path: Path to write to.
+            content: Content to write.
+        """
+        ...
+
+    @abstractmethod
+    async def grep(
+        self, pattern: str, path: str | None = None
+    ) -> list[dict[str, Any]]:
+        """Search codebase via Xcode MCP bridge (XcodeGrep).
+
+        Args:
+            pattern: Search pattern.
+            path: Optional path to restrict search.
+
+        Returns:
+            List of match results with file, line, and content.
         """
         ...
 
@@ -166,137 +238,44 @@ class GitHubOperationsPort(ABC):
         ...
 
     @abstractmethod
-    async def get_pull_request(self, pr_number: int) -> dict[str, Any]:
-        """Get pull request details.
+    async def fetch_tree(
+        self, path: str = "", ref: str = "HEAD"
+    ) -> list[dict[str, str]]:
+        """Fetch repository tree structure.
 
         Args:
-            pr_number: The PR number.
+            path: Subdirectory path. Empty string for root.
+            ref: Git ref to fetch from. Defaults to HEAD.
 
         Returns:
-            PR metadata including status, checks, and review state.
+            List of tree entries with path, type, and sha.
         """
         ...
 
     @abstractmethod
-    async def add_comment(self, pr_number: int, body: str) -> dict[str, str]:
-        """Add a comment to a pull request.
+    async def fetch_file(self, path: str, ref: str = "HEAD") -> str:
+        """Fetch a single file's contents from the remote.
 
         Args:
-            pr_number: The PR number.
-            body: Comment body (markdown).
+            path: File path within the repository.
+            ref: Git ref to fetch from. Defaults to HEAD.
 
         Returns:
-            Comment metadata with id and url.
+            File contents as a string.
         """
         ...
 
-
-class FileSystemPort(ABC):
-    """Port for filesystem operations.
-
-    All file read/write operations in stage logic go through this port.
-    This enables testing with in-memory filesystems and enforcing
-    access control (e.g., preventing writes outside the project root).
-    """
-
     @abstractmethod
-    async def read(self, path: Path) -> str:
-        """Read a file's contents.
+    async def batch_fetch(
+        self, paths: list[str], ref: str = "HEAD"
+    ) -> dict[str, str]:
+        """Batch fetch multiple files from the remote.
 
         Args:
-            path: Path to the file to read.
+            paths: List of file paths to fetch.
+            ref: Git ref to fetch from. Defaults to HEAD.
 
         Returns:
-            The file contents as a string.
-
-        Raises:
-            FileNotFoundError: If the file does not exist.
-        """
-        ...
-
-    @abstractmethod
-    async def write(self, path: Path, content: str) -> None:
-        """Write content to a file, creating parent directories as needed.
-
-        Args:
-            path: Path to write to.
-            content: Content to write.
-        """
-        ...
-
-    @abstractmethod
-    async def list_directory(self, path: Path, pattern: str = "*") -> list[Path]:
-        """List files in a directory matching a pattern.
-
-        Args:
-            path: Directory to list.
-            pattern: Glob pattern for filtering. Defaults to all files.
-
-        Returns:
-            List of matching file paths.
-        """
-        ...
-
-    @abstractmethod
-    async def exists(self, path: Path) -> bool:
-        """Check if a path exists.
-
-        Args:
-            path: Path to check.
-
-        Returns:
-            True if the path exists, False otherwise.
-        """
-        ...
-
-
-class StageContextPort(ABC):
-    """Port for stage context operations.
-
-    Abstracts the storage backend for stage artifacts. Concrete
-    implementations may use iCloud, local filesystem, or in-memory
-    storage for testing.
-    """
-
-    @abstractmethod
-    async def load_artifact(
-        self, stage_id: int, finding_id: str
-    ) -> dict[str, Any]:
-        """Load a stage artifact.
-
-        Args:
-            stage_id: Pipeline stage number (0-10).
-            finding_id: Unique finding identifier.
-
-        Returns:
-            The stage artifact as a dictionary.
-        """
-        ...
-
-    @abstractmethod
-    async def save_artifact(
-        self, stage_id: int, finding_id: str, artifact: dict[str, Any]
-    ) -> None:
-        """Save a stage artifact.
-
-        Args:
-            stage_id: Pipeline stage number (0-10).
-            finding_id: Unique finding identifier.
-            artifact: The artifact to persist.
-        """
-        ...
-
-    @abstractmethod
-    async def query_artifacts(
-        self, finding_id: str, query: str
-    ) -> list[dict[str, Any]]:
-        """Query artifacts across stages for a finding.
-
-        Args:
-            finding_id: Unique finding identifier.
-            query: Semantic query string.
-
-        Returns:
-            Matching artifact fragments with stage metadata.
+            Mapping of path to file contents.
         """
         ...

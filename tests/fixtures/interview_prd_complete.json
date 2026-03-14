@@ -1,0 +1,18 @@
+{
+  "title": "Authentication System PRD",
+  "content": "## Overview\nAuthentication system using OAuth 2.0 with JWT token management.\nThe system handles 10000 concurrent users with 99.9% uptime.\n\n## Requirements\nFR-001: User login must complete within 500ms for 95% of requests\nFR-002: Token refresh must happen automatically 5 minutes before expiry\nFR-003: Password reset emails must be sent within 30 seconds\n\n## User Stories\nSTORY-001: As a registered user, I want to log in with email and password so that I can access my dashboard.\nSTORY-002: As an admin, I want to revoke user sessions so that I can enforce security policies.\nSTORY-003: As a mobile user, I want biometric login so that I can authenticate in under 2 seconds.\n\n## Technical\nUses port/adapter pattern with protocol interfaces.\nOAuth 2.0 authorization code flow with PKCE.\nJWT tokens with RS256 signing, 1 hour expiry.\nRate limiting at 100 requests per minute per user.\n\n## Acceptance\nAC-001: Login returns JWT within 500ms\nAC-002: Token expires in 1 hour\nAC-003: Failed login after 5 attempts locks account for 15 minutes\n\n## Assumptions\n- Users have a stable internet connection with at least 1 Mbps bandwidth\n- The identity provider supports OAuth 2.0 authorization code flow\n- Mobile devices support biometric APIs (Face ID, Touch ID, fingerprint)\n- Database can handle 10000 concurrent connections\n\n## Roadmap\nSprint 1: Basic authentication flow\nSprint 2: Token refresh and session management\nSprint 3: Biometric login and MFA\n\n## Testing\nIntegration tests with coverage threshold of 80%.\nLoad testing with 10000 concurrent users.\nSecurity penetration testing for OWASP Top 10.\n\n## Metrics\n- Login success rate must exceed 99.5%\n- Mean login latency must be below 200ms\n- Token refresh failure rate must be below 0.1%\n- Password reset completion rate must exceed 95%",
+  "sections": [
+    {"name": "Overview"},
+    {"name": "Requirements"},
+    {"name": "User Stories"},
+    {"name": "Technical"},
+    {"name": "Acceptance"},
+    {"name": "Roadmap"},
+    {"name": "Testing"}
+  ],
+  "requirements": [
+    {"id": "FR-001", "text": "User login must complete within 500ms"},
+    {"id": "FR-002", "text": "Token refresh must happen automatically"},
+    {"id": "FR-003", "text": "Password reset emails sent within 30 seconds"}
+  ]
+}

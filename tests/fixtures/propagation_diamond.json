@@ -1,0 +1,10 @@
+{
+  "source_module": "core",
+  "dependency_graph": {
+    "core": ["auth", "api"],
+    "auth": ["gateway"],
+    "api": ["gateway"]
+  },
+  "expected_paths": 3,
+  "expected_max_depth": 2
+}

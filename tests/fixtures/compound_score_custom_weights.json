@@ -1,0 +1,8 @@
+{
+  "relevance": 0.9,
+  "uniqueness": 0.4,
+  "impact": 0.7,
+  "confidence": 0.8,
+  "weighted_total": 0.7,
+  "weights": {"relevance": 0.25, "uniqueness": 0.25, "impact": 0.25, "confidence": 0.25}
+}

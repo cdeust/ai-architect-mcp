@@ -1,0 +1,10 @@
+{
+  "algorithm": "weighted_average",
+  "consensus_score": 0.87,
+  "consensus_confidence": 0.94,
+  "agreement_level": "high",
+  "resolution": "accept",
+  "individual_scores": [0.86, 0.87, 0.88],
+  "iteration_count": 1,
+  "converged": true
+}

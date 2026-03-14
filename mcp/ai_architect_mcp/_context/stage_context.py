@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from ai_architect_mcp._context.artifact_store import ArtifactStore
+
 
 class StageContext:
     """Manages artifact storage and retrieval for pipeline stages.
@@ -16,9 +18,22 @@ class StageContext:
     Each finding has an isolated context that accumulates artifacts as it
     progresses through the pipeline. Stages read their predecessors' output
     and write their own — never modifying upstream artifacts.
+
+    Args:
+        store: The artifact store backend. Creates in-memory store if None.
     """
 
-    async def load(self, stage_id: int, finding_id: str) -> dict[str, Any]:
+    def __init__(self, store: ArtifactStore | None = None) -> None:
+        """Initialize with an artifact store.
+
+        Args:
+            store: ArtifactStore instance. Creates one if not provided.
+        """
+        self._store = store or ArtifactStore()
+
+    async def load(
+        self, stage_id: int, finding_id: str
+    ) -> dict[str, Any]:
         """Load the artifact for a specific stage and finding.
 
         Args:
@@ -29,13 +44,16 @@ class StageContext:
             The stage artifact as a dictionary.
 
         Raises:
-            NotImplementedError: Until the context engine is implemented.
-            KeyError: If no artifact exists for the given stage and finding.
+            ValueError: If stage_id is out of range.
+            ArtifactNotFoundError: If no artifact exists.
         """
-        raise NotImplementedError
+        return await self._store.retrieve(stage_id, finding_id)
 
     async def save(
-        self, stage_id: int, finding_id: str, content: dict[str, Any]
+        self,
+        stage_id: int,
+        finding_id: str,
+        content: dict[str, Any],
     ) -> None:
         """Save the artifact for a specific stage and finding.
 
@@ -45,22 +63,64 @@ class StageContext:
             content: The stage artifact to persist.
 
         Raises:
-            NotImplementedError: Until the context engine is implemented.
-            ValueError: If stage_id is not in range 0-10.
+            ValueError: If stage_id is out of range.
+            ContextViolationError: If writing backward.
         """
-        raise NotImplementedError
+        await self._store.store(stage_id, finding_id, content)
 
-    async def query(self, finding_id: str, semantic_query: str) -> list[dict[str, Any]]:
-        """Query across all stages for a finding using semantic search.
+    async def query(
+        self, finding_id: str, semantic_query: str
+    ) -> list[dict[str, Any]]:
+        """Query across all stages for a finding.
 
         Args:
             finding_id: The unique identifier for the finding.
-            semantic_query: Natural language query to match against artifacts.
+            semantic_query: Query string to match against artifacts.
 
         Returns:
             List of matching artifact fragments with stage metadata.
-
-        Raises:
-            NotImplementedError: Until the context engine is implemented.
         """
-        raise NotImplementedError
+        return await self._store.query(finding_id, semantic_query)
+
+    async def load_artifact(
+        self, stage_id: int, finding_id: str
+    ) -> dict[str, Any]:
+        """Load a stage artifact (StageContextPort protocol).
+
+        Args:
+            stage_id: Pipeline stage number (0-10).
+            finding_id: Unique finding identifier.
+
+        Returns:
+            The stage artifact as a dictionary.
+        """
+        return await self._store.retrieve(stage_id, finding_id)
+
+    async def save_artifact(
+        self,
+        stage_id: int,
+        finding_id: str,
+        artifact: dict[str, Any],
+    ) -> None:
+        """Save a stage artifact (StageContextPort protocol).
+
+        Args:
+            stage_id: Pipeline stage number (0-10).
+            finding_id: Unique finding identifier.
+            artifact: The artifact to persist.
+        """
+        await self._store.store(stage_id, finding_id, artifact)
+
+    async def query_artifacts(
+        self, finding_id: str, query: str
+    ) -> list[dict[str, Any]]:
+        """Query artifacts across stages (StageContextPort protocol).
+
+        Args:
+            finding_id: Unique finding identifier.
+            query: Semantic query string.
+
+        Returns:
+            Matching artifact fragments with stage metadata.
+        """
+        return await self._store.query(finding_id, query)
