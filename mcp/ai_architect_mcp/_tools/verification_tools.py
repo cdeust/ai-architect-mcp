@@ -25,11 +25,13 @@ from ai_architect_mcp._verification.algorithms.multi_agent_debate import MultiAg
 from ai_architect_mcp._verification.algorithms.nli_entailment import NLIEntailmentEvaluator
 from ai_architect_mcp._verification.consensus_router import get_consensus_algorithm
 from ai_architect_mcp._app import mcp
+from ai_architect_mcp._observability.instrumentation import observe_tool_call
 
 
 @mcp.tool(
     annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False}
 )
+@observe_tool_call
 async def ai_architect_verify_claim(
     content: str,
     claim_type: str = "atomic_fact",
@@ -61,6 +63,7 @@ async def ai_architect_verify_claim(
 @mcp.tool(
     annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False}
 )
+@observe_tool_call
 async def ai_architect_verify_graph(
     graph_data: dict[str, Any],
 ) -> dict[str, Any]:
@@ -83,6 +86,7 @@ async def ai_architect_verify_graph(
 @mcp.tool(
     annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False}
 )
+@observe_tool_call
 async def ai_architect_evaluate_nli(
     claim_content: str,
     premise: str,
@@ -112,6 +116,7 @@ async def ai_architect_evaluate_nli(
 @mcp.tool(
     annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True}
 )
+@observe_tool_call
 async def ai_architect_debate_claim(
     content: str,
     num_agents: int = 3,
@@ -141,6 +146,7 @@ async def ai_architect_debate_claim(
 @mcp.tool(
     annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False}
 )
+@observe_tool_call
 async def ai_architect_consensus(
     scores: list[float],
     confidences: list[float],
@@ -197,6 +203,7 @@ async def ai_architect_consensus(
 @mcp.tool(
     annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False}
 )
+@observe_tool_call
 async def ai_architect_decompose_claim(
     content: str,
     priority: int = 50,

@@ -15,6 +15,8 @@ readOnlyHint, destructiveHint, idempotentHint, openWorldHint.
 
 from __future__ import annotations
 
+import logging
+
 from ai_architect_mcp._app import mcp  # noqa: F401 — re-exported for backward compat
 
 # Import tool modules to trigger @mcp.tool() registration.
@@ -29,9 +31,33 @@ from ai_architect_mcp._tools import interview_tools  # noqa: F401, E402
 from ai_architect_mcp._tools import memory_tools  # noqa: F401, E402
 from ai_architect_mcp._tools import xcode_tools  # noqa: F401, E402
 
+logger = logging.getLogger(__name__)
+
+
+def _init_observability() -> None:
+    """Initialize the observability pipeline at server startup.
+
+    Creates the composite adapter (file + SSE) and sets it as the
+    global observability port so every @observe_tool_call decorator,
+    HOR rule emission, and artifact save emits real-time events.
+
+    The SSE adapter is started asynchronously on first use via
+    the event loop. The JSONL file adapter writes immediately.
+    """
+    from ai_architect_mcp._adapters.composition_root import CompositionRoot
+    from ai_architect_mcp._observability.instrumentation import (
+        set_observability_port,
+    )
+
+    root = CompositionRoot()
+    port = root.create_observability(enable_sse=True)
+    set_observability_port(port)
+    logger.info("Observability pipeline initialized (file + SSE)")
+
 
 def main() -> None:
     """Start the AI Architect MCP server."""
+    _init_observability()
     mcp.run()
 
 

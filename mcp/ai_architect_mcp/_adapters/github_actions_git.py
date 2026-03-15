@@ -168,3 +168,36 @@ class GitHubActionsGit(GitOperationsPort):
             to_ref: The ref to reset the branch to.
         """
         await self._run("branch", "-f", branch, to_ref)
+
+    async def create_worktree(
+        self, branch_name: str, base: str = "main",
+    ) -> str:
+        """Create an isolated git worktree with a new branch.
+
+        Args:
+            branch_name: Branch to create in the worktree.
+            base: Base branch to fork from.
+
+        Returns:
+            Absolute path to the worktree directory.
+        """
+        import tempfile
+
+        safe_name = branch_name.replace("/", "-")
+        worktree_dir = tempfile.mkdtemp(
+            prefix=f"ai-architect-{safe_name}-",
+        )
+        await self._run(
+            "worktree", "add", worktree_dir,
+            "-b", branch_name, base,
+        )
+        return worktree_dir
+
+    async def remove_worktree(self, worktree_path: str) -> None:
+        """Remove a previously created worktree.
+
+        Args:
+            worktree_path: Path returned by create_worktree.
+        """
+        await self._run("worktree", "remove", worktree_path, "--force")
+        await self._run("worktree", "prune")

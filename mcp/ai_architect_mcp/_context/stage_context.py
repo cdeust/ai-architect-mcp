@@ -21,15 +21,22 @@ class StageContext:
 
     Args:
         store: The artifact store backend. Creates in-memory store if None.
+        observability: Optional ObservabilityPort for emitting events.
     """
 
-    def __init__(self, store: ArtifactStore | None = None) -> None:
-        """Initialize with an artifact store.
+    def __init__(
+        self,
+        store: ArtifactStore | None = None,
+        observability: Any | None = None,
+    ) -> None:
+        """Initialize with an artifact store and optional observability.
 
         Args:
             store: ArtifactStore instance. Creates one if not provided.
+            observability: ObservabilityPort instance for event emission.
         """
         self._store = store or ArtifactStore()
+        self._observability = observability
 
     async def load(
         self, stage_id: int, finding_id: str
@@ -67,6 +74,11 @@ class StageContext:
             ContextViolationError: If writing backward.
         """
         await self._store.store(stage_id, finding_id, content)
+        if self._observability is not None:
+            from ai_architect_mcp._observability.instrumentation import (
+                emit_artifact_saved,
+            )
+            await emit_artifact_saved(stage_id, finding_id)
 
     async def query(
         self, finding_id: str, semantic_query: str

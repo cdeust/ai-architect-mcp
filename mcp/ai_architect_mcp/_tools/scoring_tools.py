@@ -7,11 +7,13 @@ from typing import Any
 from ai_architect_mcp._scoring.compound import calculate_compound_score
 from ai_architect_mcp._scoring.propagation import calculate_propagation_impact, trace_propagation
 from ai_architect_mcp._app import mcp
+from ai_architect_mcp._observability.instrumentation import observe_tool_call
 
 
 @mcp.tool(
     annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False}
 )
+@observe_tool_call
 async def ai_architect_compound_score(
     relevance: float,
     uniqueness: float,
@@ -38,6 +40,7 @@ async def ai_architect_compound_score(
 @mcp.tool(
     annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False}
 )
+@observe_tool_call
 async def ai_architect_trace_propagation(
     source_module: str,
     dependency_graph: dict[str, list[str]],

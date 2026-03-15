@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "pipeline-brain-map": {
+      "command": "node",
+      "args": ["pipeline-brain-map/mcp-server/index.js"],
+      "env": {
+        "BRAIN_MAP_MODE": "replay"
+      }
+    }
+  }
+}

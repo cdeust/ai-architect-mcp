@@ -34,6 +34,12 @@ from ai_architect_mcp._adapters.ports import (
 )
 from ai_architect_mcp._adapters.xcode_adapter import XcodeAdapter
 from ai_architect_mcp._context.stage_context import StageContext
+from ai_architect_mcp._observability.composite_adapter import (
+    CompositeObservabilityAdapter,
+)
+from ai_architect_mcp._observability.file_adapter import FileObservabilityAdapter
+from ai_architect_mcp._observability.observability_port import ObservabilityPort
+from ai_architect_mcp._observability.sse_adapter import SSEObservabilityAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -156,3 +162,30 @@ class CompositionRoot:
             StageContextPort implementation.
         """
         return StageContext()
+
+    def create_observability(
+        self, enable_sse: bool = True
+    ) -> ObservabilityPort:
+        """Create a composite observability adapter.
+
+        Combines file-based JSONL persistence with optional SSE streaming.
+        The SSE adapter must be started separately via its start() method.
+
+        Args:
+            enable_sse: Whether to include the SSE adapter.
+
+        Returns:
+            ObservabilityPort implementation multiplexing all backends.
+        """
+        trace_dir = self._project_root / ".ai-architect"
+        file_adapter = FileObservabilityAdapter(data_dir=trace_dir)
+
+        adapters: list[ObservabilityPort] = [file_adapter]
+        if enable_sse:
+            sse_adapter = SSEObservabilityAdapter()
+            adapters.append(sse_adapter)
+            logger.info("Observability: file + SSE adapters created")
+        else:
+            logger.info("Observability: file adapter only")
+
+        return CompositeObservabilityAdapter(adapters=adapters)

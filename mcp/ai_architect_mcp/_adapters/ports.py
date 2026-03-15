@@ -120,6 +120,33 @@ class GitOperationsPort(ABC):
         """
         ...
 
+    @abstractmethod
+    async def create_worktree(
+        self, branch_name: str, base: str = "main"
+    ) -> str:
+        """Create an isolated git worktree with a new branch.
+
+        One worktree per finding enables concurrent pipeline runs
+        without checkout collisions.
+
+        Args:
+            branch_name: Branch to create in the worktree.
+            base: Base branch to fork from.
+
+        Returns:
+            Absolute path to the worktree directory.
+        """
+        ...
+
+    @abstractmethod
+    async def remove_worktree(self, worktree_path: str) -> None:
+        """Remove a previously created worktree.
+
+        Args:
+            worktree_path: Path returned by create_worktree.
+        """
+        ...
+
 
 class XcodeOperationsPort(ABC):
     """Port for Xcode build, test, and bridge operations.

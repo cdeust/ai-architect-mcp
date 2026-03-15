@@ -148,6 +148,45 @@ class GitAdapter(GitOperationsPort):
         """
         await self._run("branch", "-f", branch, to_ref)
 
+    async def create_worktree(
+        self, branch_name: str, base: str = "main"
+    ) -> str:
+        """Create an isolated git worktree with a new branch.
+
+        Uses ``git worktree add`` so each finding gets its own working
+        directory and branch.  1000 concurrent findings = 1000 worktrees,
+        no checkout collisions.
+
+        Args:
+            branch_name: Branch to create inside the worktree.
+            base: Base ref to fork from.
+
+        Returns:
+            Absolute path to the new worktree directory.
+        """
+        import tempfile
+        from pathlib import Path as P
+
+        worktree_dir = P(tempfile.mkdtemp(
+            prefix=f"ai-architect-{branch_name.replace('/', '-')}-",
+        ))
+        await self._run(
+            "worktree", "add",
+            str(worktree_dir),
+            "-b", branch_name,
+            base,
+        )
+        return str(worktree_dir)
+
+    async def remove_worktree(self, worktree_path: str) -> None:
+        """Remove a worktree and prune its metadata.
+
+        Args:
+            worktree_path: Absolute path returned by create_worktree.
+        """
+        await self._run("worktree", "remove", worktree_path, "--force")
+        await self._run("worktree", "prune")
+
     async def _run(self, *args: str) -> str:
         """Run a git command and return stdout.
 

@@ -1,7 +1,8 @@
 """HOR Rule Engine — registration, execution, and score adjustment.
 
 Auto-discovers rules from category modules. Runs all 64 rules
-against an artifact and calculates score penalties.
+against an artifact and calculates score penalties. Async methods
+support optional observability event emission.
 """
 
 from __future__ import annotations
@@ -23,12 +24,17 @@ class HORRuleEngine:
     """Engine for registering and executing HOR rules.
 
     Auto-discovers rules from category modules during initialization.
-    Provides methods to run all rules, run by category, or run individual rules.
+    Provides async methods to run rules with optional observability.
     """
 
-    def __init__(self) -> None:
-        """Initialize the HOR rule engine and register all rules."""
+    def __init__(self, observability: Any | None = None) -> None:
+        """Initialize the HOR rule engine and register all rules.
+
+        Args:
+            observability: Optional ObservabilityPort for event emission.
+        """
         self._rules: dict[int, tuple[RuleFunction, str, str, HORSeverity]] = {}
+        self._observability = observability
         self._auto_discover()
 
     def register(
@@ -50,7 +56,7 @@ class HORRuleEngine:
         """
         self._rules[rule_id] = (rule_fn, category, name, severity)
 
-    def run_all(self, artifact: dict[str, Any]) -> list[HORRuleResult]:
+    async def run_all(self, artifact: dict[str, Any]) -> list[HORRuleResult]:
         """Run all registered rules against an artifact.
 
         Args:
@@ -61,10 +67,10 @@ class HORRuleEngine:
         """
         results: list[HORRuleResult] = []
         for rule_id in sorted(self._rules.keys()):
-            results.append(self.run_single(rule_id, artifact))
+            results.append(await self.run_single(rule_id, artifact))
         return results
 
-    def run_by_category(
+    async def run_by_category(
         self, category: str, artifact: dict[str, Any]
     ) -> list[HORRuleResult]:
         """Run all rules in a specific category.
@@ -80,10 +86,10 @@ class HORRuleEngine:
         for rule_id in sorted(self._rules.keys()):
             _, cat, _, _ = self._rules[rule_id]
             if cat == category:
-                results.append(self.run_single(rule_id, artifact))
+                results.append(await self.run_single(rule_id, artifact))
         return results
 
-    def run_single(
+    async def run_single(
         self, rule_id: int, artifact: dict[str, Any]
     ) -> HORRuleResult:
         """Run a single rule by ID.
@@ -104,8 +110,20 @@ class HORRuleEngine:
                 f" — available rules: {sorted(self._rules.keys())}"
             )
             raise KeyError(msg)
-        rule_fn, _, _, _ = self._rules[rule_id]
-        return rule_fn(artifact)
+        rule_fn, category, name, _ = self._rules[rule_id]
+        result = rule_fn(artifact)
+
+        if self._observability is not None:
+            from ai_architect_mcp._observability.instrumentation import (
+                emit_hor_rule,
+            )
+            await emit_hor_rule(
+                rule_id=rule_id,
+                rule_name=name,
+                category=category,
+                passed=result.passed,
+            )
+        return result
 
     def calculate_adjusted_score(
         self, base_score: float, results: list[HORRuleResult]

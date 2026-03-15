@@ -10,11 +10,13 @@ from ai_architect_mcp._prompting.algorithms.trm_refinement import TRMRefinement
 from ai_architect_mcp._prompting.confidence_fusion import ConfidenceFusionEngine
 from ai_architect_mcp._prompting.strategies.registry import StrategyRegistry
 from ai_architect_mcp._app import mcp
+from ai_architect_mcp._observability.instrumentation import observe_tool_call
 
 
 @mcp.tool(
     annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True}
 )
+@observe_tool_call
 async def ai_architect_enhance_prompt(
     prompt: str,
     context: str = "",
@@ -38,6 +40,7 @@ async def ai_architect_enhance_prompt(
 @mcp.tool(
     annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False}
 )
+@observe_tool_call
 async def ai_architect_select_strategy(
     project_type: str,
     complexity: str,
@@ -61,6 +64,7 @@ async def ai_architect_select_strategy(
 @mcp.tool(
     annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False}
 )
+@observe_tool_call
 async def ai_architect_fuse_confidence(
     estimates: list[dict[str, Any]],
 ) -> dict[str, Any]:
@@ -81,6 +85,7 @@ async def ai_architect_fuse_confidence(
 @mcp.tool(
     annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True}
 )
+@observe_tool_call
 async def ai_architect_expand_thought(
     prompt: str,
     context: str = "",
@@ -104,6 +109,7 @@ async def ai_architect_expand_thought(
 @mcp.tool(
     annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": False, "openWorldHint": True}
 )
+@observe_tool_call
 async def ai_architect_refine_prompt(
     prompt: str,
     context: str = "",

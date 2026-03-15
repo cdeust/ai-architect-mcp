@@ -14,6 +14,7 @@ from typing import Any
 
 from ai_architect_mcp._adapters.composition_root import CompositionRoot
 from ai_architect_mcp._app import mcp
+from ai_architect_mcp._observability.instrumentation import observe_tool_call
 
 _root: CompositionRoot | None = None
 
@@ -103,6 +104,7 @@ async def _swift_test(
         "openWorldHint": False,
     }
 )
+@observe_tool_call
 async def ai_architect_run_build(
     scheme: str,
     configuration: str = "Debug",
@@ -140,6 +142,7 @@ async def ai_architect_run_build(
         "openWorldHint": False,
     }
 )
+@observe_tool_call
 async def ai_architect_run_tests(
     scheme: str,
     test_plan: str | None = None,

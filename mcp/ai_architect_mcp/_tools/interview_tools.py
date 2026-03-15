@@ -16,6 +16,7 @@ from ai_architect_mcp._interview.models import (
 )
 from ai_architect_mcp._interview.scorers import score_dimension
 from ai_architect_mcp._app import mcp
+from ai_architect_mcp._observability.instrumentation import observe_tool_call
 
 # Module-level cache for recent interview results keyed by finding_id.
 _result_cache: dict[str, InterviewResult] = {}
@@ -43,6 +44,7 @@ def _store_result(result: InterviewResult) -> None:
         "openWorldHint": False,
     }
 )
+@observe_tool_call
 async def ai_architect_score_dimension(
     dimension: str,
     artifact: dict[str, Any],
@@ -79,6 +81,7 @@ async def ai_architect_score_dimension(
         "openWorldHint": False,
     }
 )
+@observe_tool_call
 async def ai_architect_run_interview_gate(
     artifact: dict[str, Any],
     finding_id: str = "UNKNOWN",
@@ -109,6 +112,7 @@ async def ai_architect_run_interview_gate(
         "openWorldHint": False,
     }
 )
+@observe_tool_call
 async def ai_architect_query_interview_results(
     finding_id: str,
     min_score: float = 0.0,

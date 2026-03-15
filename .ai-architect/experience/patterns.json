@@ -10,5 +10,50 @@
     "created_at": "2026-03-14T23:03:04.790895Z",
     "last_seen_at": "2026-03-14T23:03:04.793199Z",
     "tags": []
+  },
+  {
+    "pattern_id": "pat-e97fa8e2",
+    "pattern_type": "success",
+    "description": "E2E test pattern for container-builder-shim integration",
+    "stage_id": 2,
+    "initial_relevance": 0.77,
+    "half_life_days": 30.0,
+    "occurrence_count": 2,
+    "created_at": "2026-03-15T18:15:23.671298Z",
+    "last_seen_at": "2026-03-15T18:15:23.677444Z",
+    "tags": [
+      "e2e-test",
+      "container"
+    ]
+  },
+  {
+    "pattern_id": "pat-8f84230f",
+    "pattern_type": "success",
+    "description": "E2E test pattern for container-builder-shim integration",
+    "stage_id": 2,
+    "initial_relevance": 0.77,
+    "half_life_days": 30.0,
+    "occurrence_count": 2,
+    "created_at": "2026-03-15T18:16:04.461402Z",
+    "last_seen_at": "2026-03-15T18:16:04.465600Z",
+    "tags": [
+      "e2e-test",
+      "container"
+    ]
+  },
+  {
+    "pattern_id": "pat-3c9a98d4",
+    "pattern_type": "success",
+    "description": "E2E test pattern for container-builder-shim integration",
+    "stage_id": 2,
+    "initial_relevance": 0.77,
+    "half_life_days": 30.0,
+    "occurrence_count": 2,
+    "created_at": "2026-03-15T18:16:11.735318Z",
+    "last_seen_at": "2026-03-15T18:16:11.746104Z",
+    "tags": [
+      "e2e-test",
+      "container"
+    ]
   }
 ]

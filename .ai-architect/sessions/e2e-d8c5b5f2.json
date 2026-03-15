@@ -1,0 +1,16 @@
+{
+  "session_id": "e2e-d8c5b5f2",
+  "finding_id": "e2e-20260315191603",
+  "current_stage": 2,
+  "status": "running",
+  "started_at": "2026-03-15T18:16:04.449572Z",
+  "updated_at": "2026-03-15T18:16:04.449578Z",
+  "completed_stages": [
+    0,
+    1
+  ],
+  "error_message": null,
+  "metadata": {
+    "test": "true"
+  }
+}

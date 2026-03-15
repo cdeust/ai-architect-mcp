@@ -6,6 +6,7 @@ from typing import Any
 
 from ai_architect_mcp._verification.hor_rules.engine import HORRuleEngine
 from ai_architect_mcp._app import mcp
+from ai_architect_mcp._observability.instrumentation import observe_tool_call
 
 _engine: HORRuleEngine | None = None
 
@@ -21,6 +22,7 @@ def _get_engine() -> HORRuleEngine:
 @mcp.tool(
     annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False}
 )
+@observe_tool_call
 async def ai_architect_run_hor_rules(
     artifact: dict[str, Any],
     base_score: float = 1.0,
@@ -35,7 +37,7 @@ async def ai_architect_run_hor_rules(
         Dict with results list, adjusted_score, and summary.
     """
     engine = _get_engine()
-    results = engine.run_all(artifact)
+    results = await engine.run_all(artifact)
     adjusted = engine.calculate_adjusted_score(base_score, results)
     return {
         "results": [r.model_dump(mode="json") for r in results],
@@ -49,6 +51,7 @@ async def ai_architect_run_hor_rules(
 @mcp.tool(
     annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False}
 )
+@observe_tool_call
 async def ai_architect_run_hor_category(
     category: str,
     artifact: dict[str, Any],
@@ -63,7 +66,7 @@ async def ai_architect_run_hor_category(
         Dict with category results.
     """
     engine = _get_engine()
-    results = engine.run_by_category(category, artifact)
+    results = await engine.run_by_category(category, artifact)
     return {
         "category": category,
         "results": [r.model_dump(mode="json") for r in results],
@@ -75,6 +78,7 @@ async def ai_architect_run_hor_category(
 @mcp.tool(
     annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True, "openWorldHint": False}
 )
+@observe_tool_call
 async def ai_architect_run_hor_single(
     rule_id: int,
     artifact: dict[str, Any],
@@ -89,5 +93,5 @@ async def ai_architect_run_hor_single(
         HORRuleResult as a dictionary.
     """
     engine = _get_engine()
-    result = engine.run_single(rule_id, artifact)
+    result = await engine.run_single(rule_id, artifact)
     return result.model_dump(mode="json")

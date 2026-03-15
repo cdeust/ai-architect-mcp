@@ -25,7 +25,7 @@ def rule_047_naming_conventions(artifact: dict[str, Any]) -> HORRuleResult:
     content = artifact.get("content", "")
     abbreviations = re.findall(r"\b(?:mgr|svc|impl|util|tmp|usr|btn|lbl)\b", content, re.IGNORECASE)
     if abbreviations:
-        return _make_result(47, "naming_conventions", False, f"Non-descriptive abbreviations: {', '.join(set(abbreviations)[:5])}", HORSeverity.WARNING)
+        return _make_result(47, "naming_conventions", False, f"Non-descriptive abbreviations: {', '.join(list(set(abbreviations))[:5])}", HORSeverity.WARNING)
     return _make_result(47, "naming_conventions", True, "Naming conventions followed", HORSeverity.WARNING)
 
 

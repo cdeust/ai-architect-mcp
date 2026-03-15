@@ -19,6 +19,7 @@ from ai_architect_mcp._models.audit_event import AuditEvent, AuditQuery
 from ai_architect_mcp._models.experience_pattern import ExperiencePattern
 from ai_architect_mcp._models.session_state import SessionState
 from ai_architect_mcp._app import mcp
+from ai_architect_mcp._observability.instrumentation import observe_tool_call
 
 _composition_root: CompositionRoot | None = None
 
@@ -70,6 +71,7 @@ def _get_audit() -> AuditPort:
         "openWorldHint": False,
     }
 )
+@observe_tool_call
 async def ai_architect_load_session_state(
     session_id: str,
 ) -> dict[str, Any] | None:
@@ -96,6 +98,7 @@ async def ai_architect_load_session_state(
         "openWorldHint": False,
     }
 )
+@observe_tool_call
 async def ai_architect_save_session_state(
     state_data: dict[str, Any],
 ) -> dict[str, str]:
@@ -121,6 +124,7 @@ async def ai_architect_save_session_state(
         "openWorldHint": False,
     }
 )
+@observe_tool_call
 async def ai_architect_save_experience_pattern(
     pattern_data: dict[str, Any],
 ) -> dict[str, str]:
@@ -146,6 +150,7 @@ async def ai_architect_save_experience_pattern(
         "openWorldHint": False,
     }
 )
+@observe_tool_call
 async def ai_architect_list_experience_patterns(
     stage_id: int | None = None,
     min_relevance: float = 0.0,
@@ -174,6 +179,7 @@ async def ai_architect_list_experience_patterns(
         "openWorldHint": False,
     }
 )
+@observe_tool_call
 async def ai_architect_reinforce_pattern(
     pattern_id: str,
 ) -> dict[str, Any]:
@@ -198,6 +204,7 @@ async def ai_architect_reinforce_pattern(
         "openWorldHint": False,
     }
 )
+@observe_tool_call
 async def ai_architect_append_audit_event(
     event_data: dict[str, Any],
 ) -> dict[str, str]:
@@ -223,6 +230,7 @@ async def ai_architect_append_audit_event(
         "openWorldHint": False,
     }
 )
+@observe_tool_call
 async def ai_architect_query_audit_events(
     query_data: dict[str, Any],
 ) -> list[dict[str, Any]]:
@@ -248,6 +256,7 @@ async def ai_architect_query_audit_events(
         "openWorldHint": False,
     }
 )
+@observe_tool_call
 async def ai_architect_check_context_budget(
     total_tokens: int,
     used_tokens: int,
