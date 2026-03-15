@@ -10,7 +10,7 @@ readme = "../README.md"
 license = "MIT"
 requires-python = ">=3.12"
 authors = [
-    { name = "Clement Deust", email = "clement@deust.com" },
+    { name = "Clement Deust", email = "admin@ai-architect.tools" },
 ]
 keywords = [
     "mcp",
