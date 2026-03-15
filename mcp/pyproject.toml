@@ -5,13 +5,45 @@ build-backend = "hatchling.build"
 [project]
 name = "ai-architect-mcp"
 version = "0.1.0"
-description = "AI Architect MCP server — verification, prompting, context, and adapter tools"
+description = "Autonomous software engineering pipeline — 49 MCP tools, 64 verification rules, 11 pipeline stages"
+readme = "../README.md"
+license = "MIT"
 requires-python = ">=3.12"
+authors = [
+    { name = "Clement Deust", email = "clement@deust.com" },
+]
+keywords = [
+    "mcp",
+    "model-context-protocol",
+    "ai-architect",
+    "verification",
+    "prd",
+    "autonomous-engineering",
+    "code-generation",
+    "claude",
+    "anthropic",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
+]
 dependencies = [
-    "fastmcp",
+    "fastmcp>=2.0",
     "pydantic>=2.0",
     "anthropic",
 ]
+
+[project.urls]
+Homepage = "https://github.com/cdeust/ai-architect-mcp"
+Repository = "https://github.com/cdeust/ai-architect-mcp"
+Issues = "https://github.com/cdeust/ai-architect-mcp/issues"
 
 [project.scripts]
 ai_architect_mcp = "ai_architect_mcp.server:main"
