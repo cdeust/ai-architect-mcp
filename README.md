@@ -1,6 +1,28 @@
-# AI Architect MCP Server
+# AI Architect
 
-An autonomous software engineering pipeline that generates verified specifications before writing code, enforces compliance through 64 deterministic rules, and delivers merge-ready pull requests — without human intervention.
+**Stop writing code without a spec.** This Claude Code plugin runs an 11-stage autonomous pipeline — from research findings to merge-ready pull requests — with 64 deterministic verification rules and zero LLM judges.
+
+```
+/plugin marketplace add cdeust/ai-architect-mcp
+/plugin install ai-architect
+```
+
+Then run `/ai-architect:run-pipeline` from any project. Open source, MIT licensed.
+
+---
+
+## What You Get
+
+Four commands:
+
+| Command | What it does |
+|---------|-------------|
+| `/ai-architect:run-pipeline` | Full 11-stage pipeline — findings to pull requests |
+| `/ai-architect:generate-prd` | Generate a 9-file PRD package with verification |
+| `/ai-architect:verify-architecture` | Run 64 HOR rules on your codebase |
+| `/ai-architect:check-status` | Check pipeline state, active finding, retry counts |
+
+**49 MCP tools** across 9 categories. **64 deterministic verification rules**. **10 algorithms** (5 verification + 5 prompting). **11 pipeline stages**.
 
 Built on Anthropic's [Model Context Protocol](https://modelcontextprotocol.io). Three layers, strictly separated: **Skills** define WHAT. **Tools** define HOW. **Claude** decides WHY.
 
@@ -10,41 +32,62 @@ Built on Anthropic's [Model Context Protocol](https://modelcontextprotocol.io). 
 
 ---
 
-## What It Does
+## How It Works
 
-AI Architect replaces the "prompt → code → hope it works" pattern with a deterministic pipeline:
-
-1. **Discover** findings from 14 source categories
-2. **Analyze** blast radius with compound scoring
-3. **Design** integration via hexagonal architecture
-4. **Generate** 9-file PRD packages with full traceability
-5. **Verify** with 64 HOR rules + 5 verification algorithms — zero LLM judges
-6. **Implement** with orchestrator-workers pattern (one worker per file)
-7. **Deliver** merge-ready PRs with complete audit trails
-
-**49 MCP tools** across 9 categories. **64 deterministic verification rules**. **10 algorithms** (5 verification + 5 prompting). **11 pipeline stages**.
+1. **You describe a finding or feature** — research paper, bug report, or feature idea
+2. **Discovery** — scans 14 source categories, scores for relevance
+3. **Impact analysis** — compound scoring, dependency propagation, blast radius mapping
+4. **Integration design** — hexagonal architecture, affected ports and adapters
+5. **PRD generation** — 9-file machine-verifiable specification via [ai-prd-generator](https://github.com/cdeust/ai-prd-generator-plugin)
+6. **Plan interview** — 10-dimension deterministic quality gate
+7. **PRD review** — 7 verification algorithms, loops back if score < 0.85
+8. **Implementation** — one worker per file, dependency-ordered commits
+9. **Verification** — 64 HOR rules + build gate, loops back on failure
+10. **Benchmark + tests** — performance gates, full test suite
+11. **Delivery** — push branch, create PR with audit trail, distil experience patterns
 
 ---
 
-## Quick Install
+## Quick Start
 
-### Install from PyPI
+### Install (2 commands)
 
-```bash
-pip install ai-architect-mcp
+```
+/plugin marketplace add cdeust/ai-architect-mcp
+/plugin install ai-architect
 ```
 
-### Install from source
+### Run the pipeline
+
+```
+/ai-architect:run-pipeline
+```
+
+Or just describe what you need — the plugin detects intent.
+
+### Generate a PRD only
+
+```
+/ai-architect:generate-prd
+```
+
+### Manual setup (alternative)
 
 ```bash
 git clone https://github.com/cdeust/ai-architect-mcp.git
 cd ai-architect-mcp
-pip install -e mcp/
+./scripts/setup.sh
 ```
+
+This installs the MCP server (`pip install -e mcp/`), symlinks skills to `~/.claude/skills/`, and installs slash commands to `~/.claude/commands/ai-architect/`.
 
 ---
 
 ## Configuration
+
+### Claude Code (automatic)
+
+The `.mcp.json` at the repo root auto-configures the MCP server when Claude Code opens the project. No manual setup needed after `./scripts/setup.sh`.
 
 ### Claude Desktop
 
@@ -70,30 +113,13 @@ Add to your `claude_desktop_config.json`:
 
 </details>
 
-### Claude Code
-
-Add to your project's `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "ai-architect": {
-      "command": "ai_architect_mcp",
-      "env": {}
-    }
-  }
-}
-```
-
-Or install via CLI:
+### Claude Code (manual)
 
 ```bash
 claude mcp add ai-architect -- ai_architect_mcp
 ```
 
 ### Cursor / VS Code
-
-Add to your MCP settings:
 
 ```json
 {
@@ -245,10 +271,32 @@ All rules are pure functions. No LLM calls in verification. A universal PASS acr
 
 ---
 
+## Under the Hood
+
+| | |
+|---|---|
+| **MCP Tools** | 49 — verification, prompting, context, scoring, adapters, interview, memory, HOR, build/test |
+| **HOR Rules** | 64 deterministic rules across 10 categories |
+| **Algorithms** | 10 — 5 verification (CoV, Graph, NLI, MAD, KS Consensus) + 5 prompting (Expansion, Metacognitive, Collaborative, Signal Buffer, Confidence Fusion) |
+| **Pipeline Stages** | 11 (0-10) — health, discovery, impact, integration, PRD, interview, review, implementation, verification, benchmark, deployment, PR |
+| **Thinking Strategies** | 16 — from MIT, Stanford, Harvard, Anthropic, OpenAI, DeepSeek research |
+
+## Part of a Bigger System
+
+This plugin is the pipeline engine. It delegates PRD generation (Stage 4) to **[ai-prd-generator](https://github.com/cdeust/ai-prd-generator-plugin)** — the free, open-source PRD generator.
+
+If you only need PRDs without the full pipeline, use ai-prd-generator directly.
+
 ## Project Structure
 
 ```
 ai-architect-mcp/
+├── .mcp.json                     # MCP server auto-discovery
+├── commands/                     # Slash commands for Claude Code
+│   ├── run-pipeline.md
+│   ├── generate-prd.md
+│   ├── verify-architecture.md
+│   └── check-status.md
 ├── mcp/                          # MCP server (pip-installable)
 │   ├── ai_architect_mcp/
 │   │   ├── _tools/               # 49 MCP tool definitions
@@ -275,7 +323,7 @@ ai-architect-mcp/
 │   ├── stage-9-deployment/SKILL.md
 │   └── stage-10-pr/SKILL.md
 ├── hooks/                        # Pipeline enforcement (shell)
-├── scripts/                      # Verification scripts
+├── scripts/                      # Setup + verification scripts
 ├── tests/                        # 592 tests with fixtures
 ├── docs/                         # Architecture + decision documents
 └── CLAUDE.md                     # Project instructions for Claude
@@ -283,31 +331,19 @@ ai-architect-mcp/
 
 ---
 
-## Development
-
-### Prerequisites
+## System Requirements
 
 - Python 3.12+
 - Git
+- Claude Code (Anthropic)
 
-### Setup
+## Development
 
 ```bash
 git clone https://github.com/cdeust/ai-architect-mcp.git
 cd ai-architect-mcp
-pip install -e mcp/
-```
-
-### Run tests
-
-```bash
-python3 -m pytest tests/ -q
-```
-
-### Run the server directly
-
-```bash
-python3 -m ai_architect_mcp
+./scripts/setup.sh    # installs MCP server, skills, commands
+python3 -m pytest tests/ -q   # 592 tests
 ```
 
 ---
@@ -339,9 +375,14 @@ MIT
 
 ---
 
-## Contributing
+## Troubleshooting
 
-1. Read `CLAUDE.md` before making changes
-2. Every module needs tests — code without tests is not done
-3. Files must be under 300 lines, functions under 40 lines
-4. Run `python3 -m pytest tests/` — all tests must pass before submitting
+**Commands not found** — Run `./scripts/setup.sh` again. Check that `~/.claude/skills/orchestrator/` exists.
+
+**MCP server not connecting** — Verify Python 3.12+ is installed. Run `python3 -m ai_architect_mcp.server` to test directly.
+
+**Tests failing** — Run `python3 -m pytest tests/ -x -v` for verbose output on the first failure.
+
+---
+
+Built by [Clement Deust](https://ai-architect.tools)

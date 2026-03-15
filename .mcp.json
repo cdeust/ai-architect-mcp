@@ -1,11 +1,10 @@
 {
   "mcpServers": {
     "ai-architect": {
-      "type": "stdio",
       "command": "python3",
       "args": ["-m", "ai_architect_mcp.server"],
       "env": {
-        "PYTHONPATH": "/Users/cdeust/Developments/anthropic/ai-architect/mcp"
+        "PYTHONPATH": "${CLAUDE_PLUGIN_ROOT}/mcp"
       }
     }
   }
