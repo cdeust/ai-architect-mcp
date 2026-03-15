@@ -1,0 +1,14 @@
+[
+  {
+    "pattern_id": "p1",
+    "pattern_type": "success",
+    "description": "VLM pattern",
+    "stage_id": 1,
+    "initial_relevance": 1.0,
+    "half_life_days": 30.0,
+    "occurrence_count": 2,
+    "created_at": "2026-03-14T23:03:04.790895Z",
+    "last_seen_at": "2026-03-14T23:03:04.793199Z",
+    "tags": []
+  }
+]

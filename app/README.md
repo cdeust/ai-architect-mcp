@@ -1,12 +1,28 @@
-# App Layer (Reference Placeholder)
+# AI Architect App
 
-The Mac app lives in the `ai-architect` repository (separate). It is the display layer only.
+macOS app and CLI that composes the Apple Intelligence packages:
 
-The SwiftUI app:
+- **SwiftData + CloudKit** persistence via `SwiftDataStack`
+- **NaturalLanguage** text analysis via `NLTextAnalyzer`
+- **Vision** mockup analysis via `FoundationModelsAnalyzer`
 
-- Spawns `claude` CLI as a subprocess
-- Owns the SwiftData schema for local persistence
-- Displays pipeline status and results
-- Does not contain engine logic
+Requires macOS 26+ and Swift 6.2.
 
-No `.xcodeproj` or `.xcworkspace` belongs in this repository. The MCP server is the engine. The app is one of several clients (Mac app, Claude Code terminal, Xcode MCP bridge, GitHub Actions).
+## Build
+
+```bash
+cd app && swift build
+```
+
+## Test
+
+```bash
+cd app && swift test
+```
+
+## CLI
+
+```bash
+swift run ai-architect-cli --text "Your text to analyze"
+swift run ai-architect-cli --list
+```

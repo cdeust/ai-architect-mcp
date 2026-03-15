@@ -37,6 +37,7 @@ DerivedData/
 
 # Build outputs
 build/
+.build/
 dist/
 *.o
 *.a

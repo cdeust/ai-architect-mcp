@@ -23,8 +23,11 @@ class TestXcodeMCPBridgeAdapter:
 
     @pytest.fixture
     def adapter(self) -> XcodeMCPBridgeAdapter:
-        """Create adapter with mocked connection."""
-        return XcodeMCPBridgeAdapter(xcrun_path="xcrun")
+        """Create adapter with mocked connection and pre-discovered tab."""
+        a = XcodeMCPBridgeAdapter(xcrun_path="xcrun")
+        a._tab_discovered = True
+        a._tab_identifier = None
+        return a
 
     @pytest.mark.asyncio
     async def test_build_success(self, adapter: XcodeMCPBridgeAdapter) -> None:

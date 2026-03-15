@@ -1,0 +1,11 @@
+{
+  "session_id": "s1",
+  "finding_id": "vlm-test",
+  "current_stage": 1,
+  "status": "running",
+  "started_at": "2026-03-14T23:03:04.788084Z",
+  "updated_at": "2026-03-14T23:03:04.788085Z",
+  "completed_stages": [],
+  "error_message": null,
+  "metadata": {}
+}

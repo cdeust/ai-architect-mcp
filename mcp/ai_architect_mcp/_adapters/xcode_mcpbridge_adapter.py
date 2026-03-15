@@ -8,10 +8,13 @@ this adapter assumes mcpbridge is available.
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any
 
-from ai_architect_mcp._adapters.mcp_client_base import MCPClientBase
+from ai_architect_mcp._adapters.mcp_client_base import MCPClientBase, MCPClientError
 from ai_architect_mcp._adapters.ports import XcodeOperationsPort
+
+logger = logging.getLogger(__name__)
 
 MCPBRIDGE_TOOL_BUILD: str = "BuildProject"
 MCPBRIDGE_TOOL_BUILD_LOG: str = "GetBuildLog"
@@ -29,15 +32,24 @@ class XcodeMCPBridgeAdapter(XcodeOperationsPort, MCPClientBase):
     Delegates build, test, preview, read, write, and grep operations
     to the native MCP tools exposed by Xcode's built-in MCP bridge.
 
+    Auto-discovers the tabIdentifier from the first error response
+    when Xcode has a project open.
+
     Args:
         xcrun_path: Path to the xcrun binary.
+        tab_identifier: Optional explicit tab identifier.
     """
 
-    def __init__(self, xcrun_path: str = "xcrun") -> None:
+    def __init__(
+        self,
+        xcrun_path: str = "xcrun",
+        tab_identifier: str | None = None,
+    ) -> None:
         """Initialize the mcpbridge adapter.
 
         Args:
             xcrun_path: Path to the xcrun executable.
+            tab_identifier: Explicit Xcode window tab ID.
         """
         MCPClientBase.__init__(
             self,
@@ -45,6 +57,52 @@ class XcodeMCPBridgeAdapter(XcodeOperationsPort, MCPClientBase):
             args=["mcpbridge"],
             timeout=120.0,
         )
+        self._tab_identifier: str | None = tab_identifier
+        self._tab_discovered = tab_identifier is not None
+
+    async def _discover_tab(self) -> str | None:
+        """Discover the active Xcode tab identifier.
+
+        Calls a lightweight tool to trigger the tabIdentifier error,
+        then parses the available tab from the error message.
+
+        Returns:
+            The discovered tabIdentifier, or None.
+        """
+        if self._tab_discovered:
+            return self._tab_identifier
+        self._tab_discovered = True
+        try:
+            await self._call_tool(
+                MCPBRIDGE_TOOL_BUILD_LOG, {},
+            )
+        except MCPClientError as exc:
+            import re
+            match = re.search(r"tabIdentifier:\s*(\S+)", exc.detail)
+            if match:
+                self._tab_identifier = match.group(1).rstrip(",")
+                logger.info(
+                    "Discovered Xcode tabIdentifier: %s",
+                    self._tab_identifier,
+                )
+        return self._tab_identifier
+
+    async def _call_with_tab(
+        self, tool_name: str, arguments: dict[str, Any]
+    ) -> Any:
+        """Call a mcpbridge tool, injecting tabIdentifier.
+
+        Args:
+            tool_name: MCP tool name.
+            arguments: Tool arguments.
+
+        Returns:
+            Tool result.
+        """
+        tab = await self._discover_tab()
+        if tab and "tabIdentifier" not in arguments:
+            arguments["tabIdentifier"] = tab
+        return await self._call_tool(tool_name, arguments)
 
     async def build(
         self, scheme: str, configuration: str = "Debug"
@@ -58,7 +116,7 @@ class XcodeMCPBridgeAdapter(XcodeOperationsPort, MCPClientBase):
         Returns:
             Build result with success status, warnings, errors.
         """
-        result = await self._call_tool(
+        result = await self._call_with_tab(
             MCPBRIDGE_TOOL_BUILD,
             {"scheme": scheme, "configuration": configuration},
         )
@@ -77,12 +135,12 @@ class XcodeMCPBridgeAdapter(XcodeOperationsPort, MCPClientBase):
             Test results with pass/fail counts and failure details.
         """
         if test_plan:
-            result = await self._call_tool(
+            result = await self._call_with_tab(
                 MCPBRIDGE_TOOL_RUN_SOME_TESTS,
                 {"scheme": scheme, "testPlan": test_plan},
             )
         else:
-            result = await self._call_tool(
+            result = await self._call_with_tab(
                 MCPBRIDGE_TOOL_RUN_ALL_TESTS,
                 {"scheme": scheme},
             )
@@ -97,7 +155,7 @@ class XcodeMCPBridgeAdapter(XcodeOperationsPort, MCPClientBase):
         Returns:
             PNG image bytes of the rendered preview.
         """
-        result = await self._call_tool(
+        result = await self._call_with_tab(
             MCPBRIDGE_TOOL_RENDER_PREVIEW,
             {"viewName": view_name},
         )
@@ -112,7 +170,7 @@ class XcodeMCPBridgeAdapter(XcodeOperationsPort, MCPClientBase):
         Returns:
             File contents as a string.
         """
-        result = await self._call_tool(
+        result = await self._call_with_tab(
             MCPBRIDGE_TOOL_READ, {"path": path},
         )
         data = self._extract_data(result)
@@ -125,7 +183,7 @@ class XcodeMCPBridgeAdapter(XcodeOperationsPort, MCPClientBase):
             path: Path to write to.
             content: Content to write.
         """
-        await self._call_tool(
+        await self._call_with_tab(
             MCPBRIDGE_TOOL_WRITE,
             {"path": path, "content": content},
         )
@@ -145,7 +203,7 @@ class XcodeMCPBridgeAdapter(XcodeOperationsPort, MCPClientBase):
         params: dict[str, str] = {"pattern": pattern}
         if path is not None:
             params["path"] = path
-        result = await self._call_tool(MCPBRIDGE_TOOL_GREP, params)
+        result = await self._call_with_tab(MCPBRIDGE_TOOL_GREP, params)
         data = self._extract_data(result)
         return list(data.get("matches", []))
 
@@ -166,14 +224,21 @@ class XcodeMCPBridgeAdapter(XcodeOperationsPort, MCPClientBase):
             Normalized build result dictionary.
         """
         data = self._extract_data(raw)
-        success = data.get("succeeded", data.get("success", False))
+        build_result = data.get("buildResult", "")
+        success = data.get(
+            "succeeded",
+            data.get("success", "successfully" in str(build_result).lower()),
+        )
+        errors = list(data.get("errors", []))
+        if errors:
+            success = False
         return {
             "success": bool(success),
             "scheme": scheme,
             "configuration": configuration,
-            "output": str(data.get("output", ""))[:500],
+            "output": str(build_result or data.get("output", ""))[:500],
             "warnings": list(data.get("warnings", [])),
-            "errors": list(data.get("errors", [])),
+            "errors": errors,
         }
 
     def _parse_test_result(
@@ -226,6 +291,9 @@ class XcodeMCPBridgeAdapter(XcodeOperationsPort, MCPClientBase):
     def _extract_data(self, raw: Any) -> dict[str, Any]:
         """Extract dict from raw MCP tool result.
 
+        Handles: dict, JSON string, CallToolResult (structured_content
+        or content blocks), and list of content blocks.
+
         Args:
             raw: Raw result — may be dict, string, or content blocks.
 
@@ -239,6 +307,20 @@ class XcodeMCPBridgeAdapter(XcodeOperationsPort, MCPClientBase):
                 return json.loads(raw)
             except (json.JSONDecodeError, TypeError):
                 return {"output": raw}
+        # CallToolResult from fastmcp — has structured_content or content
+        if hasattr(raw, "structured_content") and isinstance(
+            raw.structured_content, dict
+        ):
+            return raw.structured_content
+        if hasattr(raw, "content"):
+            content = raw.content
+            if isinstance(content, list) and content:
+                first = content[0]
+                if hasattr(first, "text"):
+                    try:
+                        return json.loads(first.text)
+                    except (json.JSONDecodeError, TypeError, AttributeError):
+                        return {"output": str(first)}
         if isinstance(raw, list) and raw:
             first = raw[0]
             if hasattr(first, "text"):
