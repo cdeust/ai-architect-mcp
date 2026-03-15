@@ -18,7 +18,7 @@ from ai_architect_mcp._context.budget_monitor import BudgetMonitor
 from ai_architect_mcp._models.audit_event import AuditEvent, AuditQuery
 from ai_architect_mcp._models.experience_pattern import ExperiencePattern
 from ai_architect_mcp._models.session_state import SessionState
-from ai_architect_mcp.server import mcp
+from ai_architect_mcp._app import mcp
 
 _composition_root: CompositionRoot | None = None
 

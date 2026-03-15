@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from ai_architect_mcp._adapters.composition_root import CompositionRoot
-from ai_architect_mcp.server import mcp
+from ai_architect_mcp._app import mcp
 
 _root: CompositionRoot | None = None
 

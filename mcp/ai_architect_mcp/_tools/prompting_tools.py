@@ -9,7 +9,7 @@ from ai_architect_mcp._prompting.algorithms.adaptive_expansion import AdaptiveEx
 from ai_architect_mcp._prompting.algorithms.trm_refinement import TRMRefinement
 from ai_architect_mcp._prompting.confidence_fusion import ConfidenceFusionEngine
 from ai_architect_mcp._prompting.strategies.registry import StrategyRegistry
-from ai_architect_mcp.server import mcp
+from ai_architect_mcp._app import mcp
 
 
 @mcp.tool(

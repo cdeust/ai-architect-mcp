@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from ai_architect_mcp._verification.hor_rules.engine import HORRuleEngine
-from ai_architect_mcp.server import mcp
+from ai_architect_mcp._app import mcp
 
 _engine: HORRuleEngine | None = None
 

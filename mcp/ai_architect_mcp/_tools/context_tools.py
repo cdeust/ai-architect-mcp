@@ -6,7 +6,7 @@ from typing import Any
 
 from ai_architect_mcp._context.handoff import HandoffDocument
 from ai_architect_mcp._context.stage_context import StageContext
-from ai_architect_mcp.server import mcp
+from ai_architect_mcp._app import mcp
 
 _context: StageContext | None = None
 

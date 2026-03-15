@@ -84,7 +84,17 @@ def serve(
         config.server.port,
     )
 
-    from ai_architect_mcp.server import mcp
+    from ai_architect_mcp._app import mcp
+    # Import tool modules to trigger registration
+    from ai_architect_mcp._tools import verification_tools  # noqa: F401
+    from ai_architect_mcp._tools import hor_tools  # noqa: F401
+    from ai_architect_mcp._tools import prompting_tools  # noqa: F401
+    from ai_architect_mcp._tools import context_tools  # noqa: F401
+    from ai_architect_mcp._tools import scoring_tools  # noqa: F401
+    from ai_architect_mcp._tools import adapter_tools  # noqa: F401
+    from ai_architect_mcp._tools import interview_tools  # noqa: F401
+    from ai_architect_mcp._tools import memory_tools  # noqa: F401
+    from ai_architect_mcp._tools import xcode_tools  # noqa: F401
     mcp.run()
 
 
@@ -99,7 +109,7 @@ def health() -> None:
         errors.append(f"Config load failed: {exc}")
 
     try:
-        from ai_architect_mcp.server import mcp  # noqa: F401
+        from ai_architect_mcp._app import mcp  # noqa: F401
     except Exception as exc:
         errors.append(f"Server import failed: {exc}")
 

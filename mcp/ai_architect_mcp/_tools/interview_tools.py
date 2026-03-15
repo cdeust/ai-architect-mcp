@@ -15,7 +15,7 @@ from ai_architect_mcp._interview.models import (
     InterviewResult,
 )
 from ai_architect_mcp._interview.scorers import score_dimension
-from ai_architect_mcp.server import mcp
+from ai_architect_mcp._app import mcp
 
 # Module-level cache for recent interview results keyed by finding_id.
 _result_cache: dict[str, InterviewResult] = {}

@@ -24,7 +24,7 @@ from ai_architect_mcp._verification.algorithms.graph_constrained import GraphCon
 from ai_architect_mcp._verification.algorithms.multi_agent_debate import MultiAgentDebate
 from ai_architect_mcp._verification.algorithms.nli_entailment import NLIEntailmentEvaluator
 from ai_architect_mcp._verification.consensus_router import get_consensus_algorithm
-from ai_architect_mcp.server import mcp
+from ai_architect_mcp._app import mcp
 
 
 @mcp.tool(

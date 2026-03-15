@@ -6,7 +6,7 @@ from typing import Any
 
 from ai_architect_mcp._scoring.compound import calculate_compound_score
 from ai_architect_mcp._scoring.propagation import calculate_propagation_impact, trace_propagation
-from ai_architect_mcp.server import mcp
+from ai_architect_mcp._app import mcp
 
 
 @mcp.tool(
