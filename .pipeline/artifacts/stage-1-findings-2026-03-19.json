@@ -1,0 +1,98 @@
+{
+  "source": "technicalVeil",
+  "date": "2026-03-19",
+  "total_scanned": 328,
+  "ingested": 10,
+  "findings": [
+    {
+      "id": "-a84pr2",
+      "title": "facebookresearch/OpenApps: An open source environment for digital agents.",
+      "description": "Stars: 89 | Forks: 16 | Lang: CSS | Updated: 2026-03-19T08:48:18Z",
+      "relevance_score": 0.5,
+      "category": "AI Breakthroughs & Latest Models",
+      "actor": "meta",
+      "source_url": "https://github.com/facebookresearch/OpenApps"
+    },
+    {
+      "id": "4x7ndw",
+      "title": "NVIDIA/nvmesh-interop-db: NVMesh by NVIDIA provides remote shared storage facilities with in-server flash performance characteristics while using commodity off-the-shelf components.",
+      "description": "Stars: 6 | Forks: 0 | Lang: JavaScript | Updated: 2026-03-19T08:38:27Z",
+      "relevance_score": 0.5,
+      "category": "RAG Management",
+      "actor": "nvidia",
+      "source_url": "https://github.com/NVIDIA/nvmesh-interop-db"
+    },
+    {
+      "id": "1g3ftl",
+      "title": "NVIDIA/nvmesh-management: NVMesh by NVIDIA provides remote shared storage facilities with in-server flash performance characteristics while using commodity off-the-shelf components.",
+      "description": "Stars: 7 | Forks: 5 | Lang: JavaScript | Updated: 2026-03-19T08:38:07Z",
+      "relevance_score": 0.5,
+      "category": "RAG Management",
+      "actor": "nvidia",
+      "source_url": "https://github.com/NVIDIA/nvmesh-management"
+    },
+    {
+      "id": "-kwunie",
+      "title": "NVIDIA/nvmesh-infra: NVMesh by NVIDIA provides remote shared storage facilities with in-server flash performance characteristics while using commodity off-the-shelf components.",
+      "description": "Stars: 7 | Forks: 1 | Lang: Python | Updated: 2026-03-19T08:37:59Z",
+      "relevance_score": 0.5,
+      "category": "RAG Management",
+      "actor": "nvidia",
+      "source_url": "https://github.com/NVIDIA/nvmesh-infra"
+    },
+    {
+      "id": "-o7o5u7",
+      "title": "langchain-ai/openshell-deepagent: A general-purpose coding agent that runs inside an NVIDIA OpenShell sandbox, orchestrated by Deep Agents and powered by NVIDIA Nemotron. The agent writes and executes code in an isolated, policy-governed Linux environment.",
+      "description": "Stars: 42 | Forks: 7 | Lang: Python | Updated: 2026-03-19T08:34:55Z",
+      "relevance_score": 0.5,
+      "category": "AI Breakthroughs & Latest Models",
+      "actor": "ai agents tools",
+      "source_url": "https://github.com/langchain-ai/openshell-deepagent"
+    },
+    {
+      "id": "es3vnw",
+      "title": "langchain-ai/langchain-sandbox: Safely run untrusted Python code using Pyodide and Deno",
+      "description": "Stars: 238 | Forks: 27 | Lang: Python | Updated: 2026-03-19T08:34:54Z",
+      "relevance_score": 0.5,
+      "category": "AI Breakthroughs & Latest Models",
+      "actor": "ai agents tools",
+      "source_url": "https://github.com/langchain-ai/langchain-sandbox"
+    },
+    {
+      "id": "-k3fm4a",
+      "title": "facebookresearch/DeepFocus: DeepFocus: Learned Image Synthesis for Computational Displays",
+      "description": "Stars: 410 | Forks: 68 | Lang: Python | Updated: 2026-03-19T08:12:47Z",
+      "relevance_score": 0.5,
+      "category": "AI Breakthroughs & Latest Models",
+      "actor": "meta",
+      "source_url": "https://github.com/facebookresearch/DeepFocus"
+    },
+    {
+      "id": "-rkazvf",
+      "title": "aws/c3r: Cryptographic Computing for Clean Rooms (C3R) encryption client and SDK",
+      "description": "Stars: 41 | Forks: 7 | Lang: Java | Updated: 2026-03-19T08:11:47Z",
+      "relevance_score": 0.5,
+      "category": "AI Breakthroughs & Latest Models",
+      "actor": "amazon aws",
+      "source_url": "https://github.com/aws/c3r"
+    },
+    {
+      "id": "h79san",
+      "title": "google-deepmind/torch-cephes: Cephes Mathematical Functions library wrapped for Torch",
+      "description": "Stars: 50 | Forks: 27 | Lang: C | Updated: 2026-03-19T07:43:53Z",
+      "relevance_score": 0.5,
+      "category": "AI Breakthroughs & Latest Models",
+      "actor": "google deepmind",
+      "source_url": "https://github.com/google-deepmind/torch-cephes"
+    },
+    {
+      "id": "litk17",
+      "title": "google-deepmind/recoglab: No description",
+      "description": "Stars: 11 | Forks: 1 | Lang: Python | Updated: 2026-03-19T07:05:46Z",
+      "relevance_score": 0.5,
+      "category": "AI Breakthroughs & Latest Models",
+      "actor": "google deepmind",
+      "source_url": "https://github.com/google-deepmind/recoglab"
+    }
+  ]
+}
