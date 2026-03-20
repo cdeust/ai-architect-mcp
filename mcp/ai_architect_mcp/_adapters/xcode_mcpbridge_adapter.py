@@ -7,11 +7,11 @@ this adapter assumes mcpbridge is available.
 
 from __future__ import annotations
 
-import json
 import logging
 from typing import Any
 
 from ai_architect_mcp._adapters.mcp_client_base import MCPClientBase, MCPClientError
+from ai_architect_mcp._adapters.mcp_result_parser import extract_mcp_data
 from ai_architect_mcp._adapters.ports import XcodeOperationsPort
 
 logger = logging.getLogger(__name__)
@@ -89,7 +89,7 @@ class XcodeMCPBridgeAdapter(XcodeOperationsPort, MCPClientBase):
 
     async def _call_with_tab(
         self, tool_name: str, arguments: dict[str, Any]
-    ) -> Any:
+    ) -> object:
         """Call a mcpbridge tool, injecting tabIdentifier.
 
         Args:
@@ -173,7 +173,7 @@ class XcodeMCPBridgeAdapter(XcodeOperationsPort, MCPClientBase):
         result = await self._call_with_tab(
             MCPBRIDGE_TOOL_READ, {"path": path},
         )
-        data = self._extract_data(result)
+        data = extract_mcp_data(result)
         return str(data.get("content", data.get("output", "")))
 
     async def write(self, path: str, content: str) -> None:
@@ -204,7 +204,7 @@ class XcodeMCPBridgeAdapter(XcodeOperationsPort, MCPClientBase):
         if path is not None:
             params["path"] = path
         result = await self._call_with_tab(MCPBRIDGE_TOOL_GREP, params)
-        data = self._extract_data(result)
+        data = extract_mcp_data(result)
         return list(data.get("matches", []))
 
     def _parse_build_result(
@@ -223,7 +223,7 @@ class XcodeMCPBridgeAdapter(XcodeOperationsPort, MCPClientBase):
         Returns:
             Normalized build result dictionary.
         """
-        data = self._extract_data(raw)
+        data = extract_mcp_data(raw)
         build_result = data.get("buildResult", "")
         success = data.get(
             "succeeded",
@@ -257,7 +257,7 @@ class XcodeMCPBridgeAdapter(XcodeOperationsPort, MCPClientBase):
         Returns:
             Normalized test result dictionary.
         """
-        data = self._extract_data(raw)
+        data = extract_mcp_data(raw)
         passed = int(data.get("passed", 0))
         failed = int(data.get("failed", 0))
         return {
@@ -279,7 +279,7 @@ class XcodeMCPBridgeAdapter(XcodeOperationsPort, MCPClientBase):
         Returns:
             PNG image bytes.
         """
-        data = self._extract_data(raw)
+        data = extract_mcp_data(raw)
         image_data = data.get("imageData", b"")
         if isinstance(image_data, str):
             import base64
@@ -288,44 +288,3 @@ class XcodeMCPBridgeAdapter(XcodeOperationsPort, MCPClientBase):
             return image_data
         return str(image_data).encode()
 
-    def _extract_data(self, raw: Any) -> dict[str, Any]:
-        """Extract dict from raw MCP tool result.
-
-        Handles: dict, JSON string, CallToolResult (structured_content
-        or content blocks), and list of content blocks.
-
-        Args:
-            raw: Raw result — may be dict, string, or content blocks.
-
-        Returns:
-            Parsed dictionary.
-        """
-        if isinstance(raw, dict):
-            return raw
-        if isinstance(raw, str):
-            try:
-                return json.loads(raw)
-            except (json.JSONDecodeError, TypeError):
-                return {"output": raw}
-        # CallToolResult from fastmcp — has structured_content or content
-        if hasattr(raw, "structured_content") and isinstance(
-            raw.structured_content, dict
-        ):
-            return raw.structured_content
-        if hasattr(raw, "content"):
-            content = raw.content
-            if isinstance(content, list) and content:
-                first = content[0]
-                if hasattr(first, "text"):
-                    try:
-                        return json.loads(first.text)
-                    except (json.JSONDecodeError, TypeError, AttributeError):
-                        return {"output": str(first)}
-        if isinstance(raw, list) and raw:
-            first = raw[0]
-            if hasattr(first, "text"):
-                try:
-                    return json.loads(first.text)
-                except (json.JSONDecodeError, TypeError, AttributeError):
-                    return {"output": str(first)}
-        return {"output": str(raw)}

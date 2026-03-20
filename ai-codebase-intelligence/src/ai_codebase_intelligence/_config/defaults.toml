@@ -1,0 +1,35 @@
+[server]
+host = "127.0.0.1"
+port = 4747
+log_level = "info"
+
+[indexing]
+max_file_size_bytes = 524288        # 512KB — larger files crash tree-sitter
+chunk_byte_budget = 20971520        # 20MB per parse chunk
+ast_cache_size = 50                 # LRU cache for parsed ASTs
+max_content_snippet = 5000          # Max chars stored per symbol
+
+[search]
+fts_result_limit = 20               # Max FTS results per query
+rrf_k = 60                          # Reciprocal Rank Fusion constant
+
+[community]
+leiden_resolution_small = 1.0       # Resolution for <10K nodes
+leiden_resolution_large = 2.0       # Resolution for ≥10K nodes
+large_graph_threshold = 10000       # Node count threshold for large mode
+min_confidence_large = 0.5          # Skip low-confidence edges in large graphs
+
+[process]
+max_trace_depth = 10                # BFS max depth
+max_branching = 4                   # BFS max branching factor
+max_processes = 75                  # Cap total processes detected
+min_steps = 3                       # Minimum steps for a valid process
+min_trace_confidence = 0.5          # Skip fuzzy-global calls in traces
+
+[impact]
+default_max_depth = 3               # Default BFS depth for impact analysis
+default_min_confidence = 0.0        # Default confidence filter
+
+[storage]
+db_filename = "index.db"            # SQLite database filename
+storage_dir = ".gitnexus"           # Storage directory name inside repo

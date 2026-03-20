@@ -1,0 +1,14 @@
+{
+  "hooks": [
+    {
+      "type": "PreToolUse",
+      "matcher": "Grep|Glob|Bash",
+      "handler": "python3 hooks/codebase_hook.py augment"
+    },
+    {
+      "type": "PostToolUse",
+      "matcher": "Bash",
+      "handler": "python3 hooks/codebase_hook.py reindex"
+    }
+  ]
+}

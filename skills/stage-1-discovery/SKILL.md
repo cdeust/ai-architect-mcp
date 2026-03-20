@@ -9,11 +9,11 @@ postreq-skills: [stage-2-impact]
 
 ## Allostatic Priming
 
-You are a research analyst scanning 14 source categories for signals worth building against. You score for relevance and uniqueness. You do not generate solutions — you surface problems worth solving. TechnicalVeil YAML is the primary research format. Every finding must earn a relevance score ≥ 0.6 to proceed.
+You are a research analyst scanning source categories for signals worth building against. You score for relevance and uniqueness. You do not generate solutions — you surface problems worth solving. Source material may be in any format. Every finding must earn a relevance score ≥ 0.6 to proceed.
 
 ## Trigger
 
-USE WHEN: discovery, scan sources, find findings, research, what should we build, source scan, relevance scoring, 14 sources, TechnicalVeil ingestion, new findings, signal detection
+USE WHEN: discovery, scan sources, find findings, research, what should we build, source scan, relevance scoring, new findings, signal detection
 NOT FOR: impact analysis, integration design, PRD generation, implementation, verification — those are other stages
 
 ## Survival Question
@@ -42,21 +42,28 @@ Missing Stage 0 health report = BLOCK. Do not discover without a green health ch
 
 ### 1. Source ingestion (parallel fan-out)
 
-Read source material through filesystem adapter. Route by format:
+Read source material through filesystem adapter. Accept source paths as input or scan repo root for recognized formats:
 
 ```
-ai_architect_fs_list(path="sources/")
+ai_architect_fs_list(path=".")
 → For each source file:
-  ai_architect_fs_read(path="sources/{filename}")
+  ai_architect_fs_read(path="{filename}")
   → Route by extension:
-    .yaml/.yml → TechnicalVeil YAML parser
+    .yaml/.yml → YAML parser (TechnicalVeil or generic YAML findings)
     .md → Markdown ingestion
     .pdf → PDF ingestion
     .url → URL fetch ingestion
 ```
 
+If codebase intelligence engine is available (from Stage 0 health report `codebase_intelligence: "ai_codebase_intelligence"`):
+```
+ai_architect_codebase_query(query="{finding_keywords}", repo_path="{target_repo}")
+→ Symbol and pattern discovery across the codebase
+→ Enriches findings with structural context
+```
+
 Six adapter types (CombinedIngestionAdapter routes automatically):
-- `TechnicalVeilIngestionAdapter` — YAML format, primary research input
+- `TechnicalVeilIngestionAdapter` — YAML format (TechnicalVeil schema)
 - `YAMLFindingsAdapter` — generic YAML findings
 - `GenericMarkdownIngestionAdapter` — markdown folder ingestion
 - `URLIngestionAdapter` — URL fetch, web content
@@ -123,7 +130,7 @@ ai_architect_save_context(
 )
 
 ai_architect_fs_write(
-  path=".ai-architect/artifacts/stage-1-findings.json",
+  path="{data_dir}/artifacts/stage-1-findings.json",
   content={findings JSON}
 )
 ```
@@ -169,7 +176,7 @@ ai_architect_emit_ooda_checkpoint(stage="stage-1", checks={
 
 | Artifact | Location | Schema |
 |----------|----------|--------|
-| `stage-1-findings.json` | `.ai-architect/artifacts/` | `{findings: [{id, source, category, relevanceScore, summary, status}], sources_processed, findings_above_threshold}` |
+| `stage-1-findings.json` | `{data_dir}/artifacts/` | `{findings: [{id, source, category, relevanceScore, summary, status}], sources_processed, findings_above_threshold}` |
 | StageContext[stage-1] | `ai_architect_save_context` | Same as findings JSON |
 | PipelineState update | `ai_architect_save_session_state` | `{currentStage: 2, activeFindingID: "{top_finding}"}` |
 

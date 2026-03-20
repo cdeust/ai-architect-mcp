@@ -23,7 +23,7 @@ NOT FOR: discovery scanning, impact analysis, PRD generation, code implementatio
 ## Before you start
 
 1. `ai_architect_load_session_state` — read PipelineState. If currentStage > 0, this stage was already completed — skip.
-2. `ai_architect_fs_read(path="artifacts/skill-version-manifest.json")` — load expected skill versions.
+2. `ai_architect_fs_read(path="{data_dir}/artifacts/skill-version-manifest.json")` — load expected skill versions.
 
 Missing session state on first run = expected. Missing skill-version-manifest = BLOCK.
 
@@ -31,7 +31,7 @@ Missing session state on first run = expected. Missing skill-version-manifest = 
 
 | Field | Type | Source | Required |
 |-------|------|--------|----------|
-| `skill-version-manifest.json` | JSON | `artifacts/` | YES — BLOCK if absent |
+| `skill-version-manifest.json` | JSON | `{data_dir}/artifacts/` | YES — BLOCK if absent |
 | `PipelineState` | object | `ai_architect_load_session_state` | NO — first run creates it |
 
 ## Operations
@@ -58,7 +58,7 @@ Verify all tool groups present by calling one tool from each group:
 ### 2. Validate skill versions
 
 ```
-ai_architect_fs_read(path="artifacts/skill-version-manifest.json")
+ai_architect_fs_read(path="{data_dir}/artifacts/skill-version-manifest.json")
 → For each skill in manifest:
   ai_architect_fs_read(path="skills/{skill-name}/SKILL.md")
   → Parse frontmatter version field
@@ -77,11 +77,15 @@ ai_architect_fs_list(path=".")
 → Confirms filesystem adapter operational
 ```
 
-### 4. Foundation Models reachability (optional)
+### 4. Codebase intelligence probe (optional)
+
+Probe for codebase intelligence engine MCP tools (`ai_architect_codebase_*`). If available, record `codebase_intelligence: "ai_codebase_intelligence"` in the health report. Downstream stages use the codebase intelligence engine for blast radius, symbol search, and dependency graphs when available. If unavailable, record `codebase_intelligence: "filesystem_only"` — downstream stages fall back to `ai_architect_fs_list` + grep patterns.
+
+### 5. Foundation Models reachability (optional)
 
 Foundation Models availability is checked but not blocking. Pipeline continues if Foundation Models is offline — Apple Intelligence features degrade gracefully.
 
-### 5. Write health report
+### 6. Write health report
 
 ```
 ai_architect_save_context(
@@ -99,12 +103,12 @@ ai_architect_save_context(
 )
 
 ai_architect_fs_write(
-  path=".ai-architect/artifacts/stage-0-health-report.json",
+  path="{data_dir}/artifacts/stage-0-health-report.json",
   content={health report JSON}
 )
 ```
 
-### 6. Update pipeline state
+### 7. Update pipeline state
 
 ```
 ai_architect_save_session_state(session_id="{sessionID}", state={
@@ -145,7 +149,7 @@ ai_architect_emit_ooda_checkpoint(stage="stage-0", checks={
 
 | Artifact | Location | Schema |
 |----------|----------|--------|
-| `stage-0-health-report.json` | `.ai-architect/artifacts/` | `{mcp_server, tool_groups, skill_versions, git, github, foundation_models, timestamp}` |
+| `stage-0-health-report.json` | `{data_dir}/artifacts/` | `{mcp_server, tool_groups, skill_versions, git, github, foundation_models, timestamp}` |
 | StageContext[stage-0] | `ai_architect_save_context` | Same as report |
 | PipelineState update | `ai_architect_save_session_state` | `{currentStage: 1}` |
 

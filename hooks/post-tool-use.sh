@@ -13,6 +13,13 @@ set -euo pipefail
 CURRENT_STAGE="${CURRENT_STAGE:-0}"
 HOOK_DIR="$(dirname "$0")/post-tool-use"
 
+# ── MANDATORY: Context load marker ────────────────────────────────────────────
+# Records successful load_context calls so the handoff gate can verify them.
+if [ -f "$HOOK_DIR/context-load-marker.sh" ]; then
+  bash "$HOOK_DIR/context-load-marker.sh"
+fi
+# ── END context load marker ──────────────────────────────────────────────────
+
 # ── Stage dispatch ────────────────────────────────────────────────────────────
 case "$CURRENT_STAGE" in
   6)

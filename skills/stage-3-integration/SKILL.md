@@ -22,9 +22,17 @@ NOT FOR: plan interview, PRD generation, impact analysis — stage 2, implementa
 
 ## Before you start
 
-1. `ai_architect_load_context(stage="stage-2", finding_id="{findingID}")` — load impact map from Stage 2
-2. `ai_architect_load_session_state(session_id="{sessionID}")` — confirm currentStage = 3
-3. `ai_architect_list_experience_patterns(category="decision")` — load architecture decisions for context
+**MANDATORY: Load ALL required upstream artifacts.**
+
+1. `ai_architect_load_context(stage_id=0, finding_id="{findingID}")` — load Stage 0 health report (codebase intelligence engine availability)
+2. `ai_architect_load_context(stage_id=1, finding_id="{findingID}")` — load Stage 1 findings
+3. `ai_architect_load_context(stage_id=2, finding_id="{findingID}")` — load Stage 2 impact map (propagation paths, affected engines)
+4. `ai_architect_load_session_state(session_id="{sessionID}")` — confirm currentStage = 3
+5. `ai_architect_list_experience_patterns(category="decision")` — load architecture decisions for context
+
+**If `codebase_intelligence: "ai_codebase_intelligence"` in Stage 0 health report:**
+6. `ai_architect_codebase_cypher(query="MATCH (a)-[:CodeRelation {type: 'IMPLEMENTS'}]->(b) WHERE b.name IN {affected_ports} RETURN a.name, a.filePath", repo_path="{target_repo}")` — find existing adapter implementations
+7. `ai_architect_codebase_context(name="{affected_port}", include_source=true, repo_path="{target_repo}")` — for each affected port from impact map
 
 Missing Stage 2 impact map = BLOCK. Cannot design integration without knowing blast radius.
 
@@ -34,19 +42,38 @@ Missing Stage 2 impact map = BLOCK. Cannot design integration without knowing bl
 |-------|------|--------|----------|
 | `stage-2-impact-map.json` | JSON | StageContext[stage-2] | YES — BLOCK if missing |
 | ImpactMap.affectedEngines | list | Stage 2 output | YES |
-| Port definitions | files | Codebase `Domain/Ports/` | YES — need to cross-reference |
+| Port/interface definitions | files | Codebase (discovered via search) | YES — need to cross-reference |
 
 ## Operations
 
-### 1. Read port protocols and cross-reference with impact map
+### 1. Discover interface/protocol definitions and cross-reference with impact map
 
+If codebase intelligence engine is available (from Stage 0 health report):
 ```
-ai_architect_fs_list(path="Domain/Ports/")
-→ List all port protocol files
+ai_architect_codebase_context(
+  name="{affected_engines}",
+  include_source=true,
+  repo_path="{target_repo}"
+)
+→ Resolve dependency graph for affected symbols
 
-For each port file:
-  ai_architect_fs_read(path="Domain/Ports/{port_file}")
-  → Parse protocol definition
+ai_architect_codebase_context(
+  name="{port_name}",
+  include_source=true,
+  repo_path="{target_repo}"
+)
+→ Full context for each affected interface/protocol
+```
+
+Fallback (filesystem scan):
+```
+ai_architect_fs_list(path=".")
+→ Search for interface/protocol/abstract class definitions
+→ Common patterns: *Port*, *Protocol*, *Interface*, *Abstract*
+
+For each interface file:
+  ai_architect_fs_read(path="{interface_file}")
+  → Parse protocol/interface definition
   → Cross-reference with ImpactMap.affectedEngines
   → Mark ports requiring modification
 ```
@@ -108,7 +135,7 @@ ai_architect_save_context(
 )
 
 ai_architect_fs_write(
-  path=".ai-architect/artifacts/stage-3-integration-design.md",
+  path="{data_dir}/artifacts/stage-3-integration-design.md",
   content={integration design markdown}
 )
 ```
@@ -156,7 +183,7 @@ ai_architect_emit_ooda_checkpoint(stage="stage-3", checks={
 
 | Artifact | Location | Schema |
 |----------|----------|--------|
-| `stage-3-integration-design.md` | `.ai-architect/artifacts/` | Markdown with affected ports, adapter changes, composition root, file manifest |
+| `stage-3-integration-design.md` | `{data_dir}/artifacts/` | Markdown with affected ports, adapter changes, composition root, file manifest |
 | StageContext[stage-3] | `ai_architect_save_context` | `{findingID, affectedPorts, adapterChanges, compositionRootChanges, fileChangeManifest, adapterContext}` |
 | PipelineState update | `ai_architect_save_session_state` | `{currentStage: 4}` |
 

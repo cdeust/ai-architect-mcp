@@ -10,7 +10,22 @@ import asyncio
 import json
 from typing import Any
 
+import re
+
 from ai_architect_mcp._adapters.ports import GitHubOperationsPort
+
+
+def _extract_pr_number(url: str) -> int:
+    """Extract PR number from a GitHub PR URL.
+
+    Args:
+        url: GitHub PR URL (e.g., 'https://github.com/owner/repo/pull/42').
+
+    Returns:
+        PR number, or 0 if not parseable.
+    """
+    match = re.search(r"/pull/(\d+)", url)
+    return int(match.group(1)) if match else 0
 
 
 class GitHubOperationError(Exception):
@@ -70,10 +85,12 @@ class GitHubAdapter(GitHubOperationsPort):
             "--body", body,
             "--head", head,
             "--base", base,
-            "--json", "number,url,state",
         ]
         output = await self._run(*args)
-        return json.loads(output)
+        url = output.strip()
+        # gh pr create outputs the PR URL on stdout
+        pr_number = _extract_pr_number(url)
+        return {"number": pr_number, "url": url, "state": "open"}
 
     async def fetch_tree(
         self, path: str = "", ref: str = "HEAD"

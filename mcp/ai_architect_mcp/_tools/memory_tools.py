@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from ai_architect_mcp._adapters.composition_root import CompositionRoot
 from ai_architect_mcp._adapters.memory_ports import (
     AuditPort,
     ExperiencePort,
@@ -20,20 +19,7 @@ from ai_architect_mcp._models.experience_pattern import ExperiencePattern
 from ai_architect_mcp._models.session_state import SessionState
 from ai_architect_mcp._app import mcp
 from ai_architect_mcp._observability.instrumentation import observe_tool_call
-
-_composition_root: CompositionRoot | None = None
-
-
-def _get_root() -> CompositionRoot:
-    """Get or create the module-level composition root.
-
-    Returns:
-        Shared CompositionRoot instance.
-    """
-    global _composition_root
-    if _composition_root is None:
-        _composition_root = CompositionRoot()
-    return _composition_root
+from ai_architect_mcp._tools._composition import get_root
 
 
 def _get_pipeline_state() -> PipelineStatePort:
@@ -42,7 +28,7 @@ def _get_pipeline_state() -> PipelineStatePort:
     Returns:
         PipelineStatePort implementation.
     """
-    return _get_root().create_pipeline_state()
+    return get_root().create_pipeline_state()
 
 
 def _get_experience() -> ExperiencePort:
@@ -51,7 +37,7 @@ def _get_experience() -> ExperiencePort:
     Returns:
         ExperiencePort implementation.
     """
-    return _get_root().create_experience()
+    return get_root().create_experience()
 
 
 def _get_audit() -> AuditPort:
@@ -60,7 +46,7 @@ def _get_audit() -> AuditPort:
     Returns:
         AuditPort implementation.
     """
-    return _get_root().create_audit()
+    return get_root().create_audit()
 
 
 @mcp.tool(

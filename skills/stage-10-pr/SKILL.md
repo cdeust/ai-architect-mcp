@@ -80,7 +80,7 @@ PR body template:
   - **Compound Score:** {score}
 
   ## Audit Trail
-  - Stage artifacts: `.ai-architect/artifacts/`
+  - Stage artifacts: `{data_dir}/artifacts/`
   - HOR report: `stage-7-hor-report.json`
   - Test report: `stage-9-test-report.json`
   - sha256 manifest: `sha256-manifest.json`
@@ -109,11 +109,11 @@ ai_architect_append_audit_event(event={
 Hash all 9 PRD files + all stage artifacts for tamper detection:
 
 ```
-ai_architect_fs_read(path=".ai-architect/prd/prd-overview.md")
+ai_architect_fs_read(path="{data_dir}/prd/prd-overview.md")
 ... (read all 9 PRD files + stage artifacts)
 
 ai_architect_fs_write(
-  path=".ai-architect/artifacts/sha256-manifest.json",
+  path="{data_dir}/artifacts/sha256-manifest.json",
   content={
     "files": [
       {"path": "prd-overview.md", "sha256": "{hash}"},
@@ -159,7 +159,7 @@ ai_architect_save_context(
 )
 
 ai_architect_fs_write(
-  path=".ai-architect/artifacts/stage-10-pr-manifest.json",
+  path="{data_dir}/artifacts/stage-10-pr-manifest.json",
   content={PR manifest JSON}
 )
 ```
@@ -202,8 +202,8 @@ ai_architect_emit_ooda_checkpoint(stage="stage-10", checks={
 | Artifact | Location | Schema |
 |----------|----------|--------|
 | Pull Request | GitHub | Merge-ready PR with audit trail body |
-| `stage-10-pr-manifest.json` | `.ai-architect/artifacts/` | `{findingID, prURL, branch, labels, sha256Manifest, auditTrailClosed}` |
-| `sha256-manifest.json` | `.ai-architect/artifacts/` | `{files: [{path, sha256}], generated_at, finding_id}` |
+| `stage-10-pr-manifest.json` | `{data_dir}/artifacts/` | `{findingID, prURL, branch, labels, sha256Manifest, auditTrailClosed}` |
+| `sha256-manifest.json` | `{data_dir}/artifacts/` | `{files: [{path, sha256}], generated_at, finding_id}` |
 | ExperiencePatterns | `ai_architect_save_experience_pattern` | Distilled lessons from this pipeline run |
 | StageContext[stage-10] | `ai_architect_save_context` | Same as PR manifest |
 | PipelineState (final) | `ai_architect_save_session_state` | `{currentStage: "complete", status: "delivered", prURL}` |

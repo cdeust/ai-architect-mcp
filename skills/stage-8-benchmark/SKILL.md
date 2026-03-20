@@ -102,7 +102,7 @@ ai_architect_save_context(
 )
 
 ai_architect_fs_write(
-  path=".ai-architect/artifacts/stage-8-benchmark-report.json",
+  path="{data_dir}/artifacts/stage-8-benchmark-report.json",
   content={benchmark report JSON}
 )
 ```
@@ -146,7 +146,7 @@ ai_architect_emit_ooda_checkpoint(stage="stage-8", checks={
 
 | Artifact | Location | Schema |
 |----------|----------|--------|
-| `stage-8-benchmark-report.json` | `.ai-architect/artifacts/` | `{findingID, buildResult, benchmarkResults: [{nfr_id, metric, target, measured, pass}], allGatesPass}` |
+| `stage-8-benchmark-report.json` | `{data_dir}/artifacts/` | `{findingID, buildResult, benchmarkResults: [{nfr_id, metric, target, measured, pass}], allGatesPass}` |
 | StageContext[stage-8] | `ai_architect_save_context` | Same as benchmark report |
 | PipelineState update | `ai_architect_save_session_state` | `{currentStage: 9}` |
 

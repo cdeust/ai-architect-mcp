@@ -159,7 +159,7 @@ ai_architect_save_context(
 )
 
 ai_architect_fs_write(
-  path=".ai-architect/artifacts/stage-5-verification-report.json",
+  path="{data_dir}/artifacts/stage-5-verification-report.json",
   content={verification report JSON}
 )
 
@@ -220,7 +220,7 @@ ai_architect_emit_ooda_checkpoint(stage="stage-5", checks={
 
 | Artifact | Location | Schema |
 |----------|----------|--------|
-| `stage-5-verification-report.json` | `.ai-architect/artifacts/` | `{algorithmScores, compoundScore, overclaiming, failedRules, decision}` |
+| `stage-5-verification-report.json` | `{data_dir}/artifacts/` | `{algorithmScores, compoundScore, overclaiming, failedRules, decision}` |
 | StageContext[stage-5] | `ai_architect_save_context` | Same as verification report |
 | AuditEvent | `ai_architect_append_audit_event` | `{type, stage, outcome, compoundScore, retryCount}` |
 

@@ -168,7 +168,7 @@ class GitAdapter(GitOperationsPort):
         from pathlib import Path as P
 
         worktree_dir = P(tempfile.mkdtemp(
-            prefix=f"ai-architect-{branch_name.replace('/', '-')}-",
+            prefix=f"pipeline-{branch_name.replace('/', '-')}-",
         ))
         await self._run(
             "worktree", "add",

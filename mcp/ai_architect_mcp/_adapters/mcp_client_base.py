@@ -88,7 +88,7 @@ class MCPClientBase:
 
     async def _call_tool(
         self, tool_name: str, arguments: dict[str, Any] | None = None
-    ) -> Any:
+    ) -> object:
         """Invoke a tool on the remote MCP server.
 
         Args:
@@ -96,7 +96,7 @@ class MCPClientBase:
             arguments: Tool arguments as a dictionary.
 
         Returns:
-            The tool's result payload.
+            The tool's result payload (pass to extract_mcp_data to parse).
 
         Raises:
             MCPClientError: If the call fails or times out.

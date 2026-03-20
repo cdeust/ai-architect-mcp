@@ -30,6 +30,7 @@ from ai_architect_mcp._tools import adapter_tools  # noqa: F401, E402
 from ai_architect_mcp._tools import interview_tools  # noqa: F401, E402
 from ai_architect_mcp._tools import memory_tools  # noqa: F401, E402
 from ai_architect_mcp._tools import xcode_tools  # noqa: F401, E402
+from ai_architect_mcp._tools import pipeline_tools  # noqa: F401, E402
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +45,12 @@ def _init_observability() -> None:
     The SSE adapter is started asynchronously on first use via
     the event loop. The JSONL file adapter writes immediately.
     """
-    from ai_architect_mcp._adapters.composition_root import CompositionRoot
     from ai_architect_mcp._observability.instrumentation import (
         set_observability_port,
     )
+    from ai_architect_mcp._tools._composition import get_root
 
-    root = CompositionRoot()
+    root = get_root()
     port = root.create_observability(enable_sse=True)
     set_observability_port(port)
     logger.info("Observability pipeline initialized (file + SSE)")

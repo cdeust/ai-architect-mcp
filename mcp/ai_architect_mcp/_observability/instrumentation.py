@@ -17,16 +17,17 @@ from collections.abc import Callable
 from typing import Any
 
 from ai_architect_mcp._observability.event_types import EventType, PipelineEvent
+from ai_architect_mcp._observability.observability_port import ObservabilityPort
 
 logger = logging.getLogger(__name__)
 
-_observability_port = None
+_observability_port: ObservabilityPort | None = None
 
 MAX_ARG_LENGTH: int = 200
 MAX_RESULT_LENGTH: int = 200
 
 
-def set_observability_port(port: Any) -> None:
+def set_observability_port(port: ObservabilityPort | None) -> None:
     """Set the global observability port for instrumentation.
 
     Called once at startup from the composition root.
@@ -38,7 +39,7 @@ def set_observability_port(port: Any) -> None:
     _observability_port = port
 
 
-def get_observability_port() -> Any:
+def get_observability_port() -> ObservabilityPort | None:
     """Get the current global observability port.
 
     Returns:
@@ -171,47 +172,66 @@ def observe_tool_call(func: Callable[..., Any]) -> Callable[..., Any]:
         args_meta = _extract_args(func, args, kwargs)
         message = _build_message(tool_name, args_meta)
 
-        await port.emit(PipelineEvent(
-            event_id=f"tc-{event_id}",
-            event_type=EventType.TOOL_CALLED,
-            stage_id=stage_id,
-            tool_name=tool_name,
-            message=message,
-            metadata=args_meta,
-        ))
+        await _emit_tool_called(port, event_id, stage_id, tool_name, message, args_meta)
 
         start = time.monotonic()
         try:
             result = await func(*args, **kwargs)
             elapsed_ms = (time.monotonic() - start) * 1000
-            result_meta = _extract_result(result)
-            all_meta = {**args_meta, **result_meta}
-
-            await port.emit(PipelineEvent(
-                event_id=f"td-{event_id}",
-                event_type=EventType.TOOL_COMPLETED,
-                stage_id=stage_id,
-                tool_name=tool_name,
-                message=f"{message} [{elapsed_ms:.0f}ms]",
-                duration_ms=round(elapsed_ms, 2),
-                metadata=all_meta,
-            ))
+            await _emit_tool_completed(
+                port, event_id, stage_id, tool_name, message, args_meta, result, elapsed_ms,
+            )
             return result
         except Exception as exc:
             elapsed_ms = (time.monotonic() - start) * 1000
-
-            await port.emit(PipelineEvent(
-                event_id=f"tf-{event_id}",
-                event_type=EventType.TOOL_FAILED,
-                stage_id=stage_id,
-                tool_name=tool_name,
-                message=f"{message} FAILED: {exc}",
-                duration_ms=round(elapsed_ms, 2),
-                metadata={**args_meta, "error": str(exc)[:200]},
-            ))
+            await _emit_tool_failed(
+                port, event_id, stage_id, tool_name, message, args_meta, exc, elapsed_ms,
+            )
             raise
 
     return wrapper
+
+
+async def _emit_tool_called(
+    port: ObservabilityPort, event_id: str, stage_id: int,
+    tool_name: str, message: str, args_meta: dict[str, str],
+) -> None:
+    """Emit a TOOL_CALLED event."""
+    await port.emit(PipelineEvent(
+        event_id=f"tc-{event_id}", event_type=EventType.TOOL_CALLED,
+        stage_id=stage_id, tool_name=tool_name,
+        message=message, metadata=args_meta,
+    ))
+
+
+async def _emit_tool_completed(
+    port: ObservabilityPort, event_id: str, stage_id: int,
+    tool_name: str, message: str, args_meta: dict[str, str],
+    result: object, elapsed_ms: float,
+) -> None:
+    """Emit a TOOL_COMPLETED event."""
+    result_meta = _extract_result(result)
+    await port.emit(PipelineEvent(
+        event_id=f"td-{event_id}", event_type=EventType.TOOL_COMPLETED,
+        stage_id=stage_id, tool_name=tool_name,
+        message=f"{message} [{elapsed_ms:.0f}ms]",
+        duration_ms=round(elapsed_ms, 2), metadata={**args_meta, **result_meta},
+    ))
+
+
+async def _emit_tool_failed(
+    port: ObservabilityPort, event_id: str, stage_id: int,
+    tool_name: str, message: str, args_meta: dict[str, str],
+    exc: Exception, elapsed_ms: float,
+) -> None:
+    """Emit a TOOL_FAILED event."""
+    await port.emit(PipelineEvent(
+        event_id=f"tf-{event_id}", event_type=EventType.TOOL_FAILED,
+        stage_id=stage_id, tool_name=tool_name,
+        message=f"{message} FAILED: {exc}",
+        duration_ms=round(elapsed_ms, 2),
+        metadata={**args_meta, "error": str(exc)[:200]},
+    ))
 
 
 

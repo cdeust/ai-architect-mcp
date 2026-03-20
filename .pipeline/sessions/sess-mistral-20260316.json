@@ -1,0 +1,11 @@
+{
+  "session_id": "sess-mistral-20260316",
+  "finding_id": "FIND-BIAS-001",
+  "current_stage": 5,
+  "status": "running",
+  "started_at": "2026-03-16T19:50:49.698616Z",
+  "updated_at": "2026-03-16T19:50:49.698623Z",
+  "completed_stages": [],
+  "error_message": null,
+  "metadata": {}
+}

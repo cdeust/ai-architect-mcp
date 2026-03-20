@@ -1,0 +1,25 @@
+{
+  "impact_analysis": [
+    {
+      "id": "-a84pr2",
+      "title": "facebookresearch/OpenApps: An open source environment for digital agents.",
+      "relevance": 0.5,
+      "category": "AI Breakthroughs & Latest Models",
+      "actor": "meta"
+    },
+    {
+      "id": "4x7ndw",
+      "title": "NVIDIA/nvmesh-interop-db: NVMesh by NVIDIA provides remote shared storage facilities with in-server flash performance characteristics while using commodity off-the-shelf components.",
+      "relevance": 0.5,
+      "category": "RAG Management",
+      "actor": "nvidia"
+    },
+    {
+      "id": "1g3ftl",
+      "title": "NVIDIA/nvmesh-management: NVMesh by NVIDIA provides remote shared storage facilities with in-server flash performance characteristics while using commodity off-the-shelf components.",
+      "relevance": 0.5,
+      "category": "RAG Management",
+      "actor": "nvidia"
+    }
+  ]
+}

@@ -111,7 +111,7 @@ ai_architect_save_context(
 )
 
 ai_architect_fs_write(
-  path=".ai-architect/artifacts/stage-9-test-report.json",
+  path="{data_dir}/artifacts/stage-9-test-report.json",
   content={test report JSON}
 )
 ```
@@ -159,7 +159,7 @@ ai_architect_emit_ooda_checkpoint(stage="stage-9", checks={
 
 | Artifact | Location | Schema |
 |----------|----------|--------|
-| `stage-9-test-report.json` | `.ai-architect/artifacts/` | `{findingID, testResults, totalTests, passed, failed, coverage, allTestsPass}` |
+| `stage-9-test-report.json` | `{data_dir}/artifacts/` | `{findingID, testResults, totalTests, passed, failed, coverage, allTestsPass}` |
 | StageContext[stage-9] | `ai_architect_save_context` | Same as test report |
 | PipelineState update | `ai_architect_save_session_state` | `{currentStage: 10}` |
 

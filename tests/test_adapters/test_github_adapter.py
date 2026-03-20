@@ -16,15 +16,17 @@ class TestGitHubAdapter:
     @pytest.mark.asyncio
     async def test_create_pr(self) -> None:
         adapter = GitHubAdapter()
-        pr_data = {"number": 42, "url": "https://github.com/test/pr/42", "state": "open"}
+        pr_url = "https://github.com/test/repo/pull/42\n"
         with patch("ai_architect_mcp._adapters.github_adapter.asyncio.create_subprocess_exec") as mock:
             process = AsyncMock()
-            process.communicate.return_value = (json.dumps(pr_data).encode(), b"")
+            process.communicate.return_value = (pr_url.encode(), b"")
             process.returncode = 0
             mock.return_value = process
 
             result = await adapter.create_pull_request("Test PR", "Body", "feature")
             assert result["number"] == 42
+            assert result["url"] == "https://github.com/test/repo/pull/42"
+            assert result["state"] == "open"
 
     @pytest.mark.asyncio
     async def test_fetch_tree(self) -> None:

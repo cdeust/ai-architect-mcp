@@ -22,9 +22,16 @@ NOT FOR: design integration, generate PRD, discovery — that was stage 1
 
 ## Before you start
 
-1. `ai_architect_load_context(stage="stage-1", finding_id="{findingID}")` — load findings from Stage 1
-2. `ai_architect_load_session_state(session_id="{sessionID}")` — confirm currentStage = 2
-3. `ai_architect_list_experience_patterns(category="pattern")` — load architecture patterns for impact context
+**MANDATORY: Load ALL required upstream artifacts.**
+
+1. `ai_architect_load_context(stage_id=0, finding_id="{findingID}")` — load Stage 0 health report (check `codebase_intelligence` field for codebase intelligence engine availability)
+2. `ai_architect_load_context(stage_id=1, finding_id="{findingID}")` — load Stage 1 findings (finding details, relevance scores, codebase matches)
+3. `ai_architect_load_session_state(session_id="{sessionID}")` — confirm currentStage = 2
+4. `ai_architect_list_experience_patterns(category="pattern")` — load architecture patterns for impact context
+
+**If `codebase_intelligence: "ai_codebase_intelligence"` in Stage 0 health report:**
+5. `ai_architect_codebase_impact(target="{primary_symbol}", direction="upstream", repo_path="{target_repo}")` — blast radius analysis
+6. `ai_architect_codebase_context(name="{primary_symbol}", include_source=true, repo_path="{target_repo}")` — full symbol context with callers
 
 Missing Stage 1 findings = BLOCK. Cannot analyze impact without findings.
 
@@ -42,10 +49,22 @@ Missing Stage 1 findings = BLOCK. Cannot analyze impact without findings.
 
 ```
 ai_architect_fs_list(path=".")
-→ Identify key structural files: Package.swift, port definitions, adapter files
+→ Identify key structural files: build manifests (Package.swift, package.json,
+  Cargo.toml, go.mod, pyproject.toml, etc.) and interface definitions
 
-ai_architect_fs_read(path="{port_files}")
-→ Load port protocols to understand dependency structure
+ai_architect_fs_read(path="{interface_files}")
+→ Load interface/protocol definitions to understand dependency structure
+```
+
+If codebase intelligence engine is available (from Stage 0 health report):
+```
+ai_architect_codebase_impact(
+  target="{affected_files}",
+  direction="downstream",
+  repo_path="{target_repo}"
+)
+→ Precise impact analysis: which files, modules, and tests are affected
+→ More accurate than filesystem scanning for large codebases
 ```
 
 ### 2. Run Collaborative Inference (Algorithm 8)
@@ -140,7 +159,7 @@ ai_architect_save_context(
 )
 
 ai_architect_fs_write(
-  path=".ai-architect/artifacts/stage-2-impact-map.json",
+  path="{data_dir}/artifacts/stage-2-impact-map.json",
   content={impact map JSON}
 )
 ```
@@ -185,7 +204,7 @@ ai_architect_emit_ooda_checkpoint(stage="stage-2", checks={
 
 | Artifact | Location | Schema |
 |----------|----------|--------|
-| `stage-2-impact-map.json` | `.ai-architect/artifacts/` | `{findingID, compoundImpactScore, propagationPaths, affectedEngines, affectedPackages, cascadePoints, perspectiveScores}` |
+| `stage-2-impact-map.json` | `{data_dir}/artifacts/` | `{findingID, compoundImpactScore, propagationPaths, affectedEngines, affectedPackages, cascadePoints, perspectiveScores}` |
 | StageContext[stage-2] | `ai_architect_save_context` | Same as impact map |
 | PipelineState update | `ai_architect_save_session_state` | `{currentStage: 3}` |
 

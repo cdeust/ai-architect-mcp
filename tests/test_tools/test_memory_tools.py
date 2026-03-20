@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 
 import ai_architect_mcp._tools.memory_tools as mt
+import ai_architect_mcp._tools._composition as comp
 from ai_architect_mcp._adapters.composition_root import CompositionRoot
 
 
@@ -15,7 +16,7 @@ from ai_architect_mcp._adapters.composition_root import CompositionRoot
 def _inject_tmp_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Inject a temporary CompositionRoot for all tests."""
     root = CompositionRoot(project_root=tmp_path)
-    monkeypatch.setattr(mt, "_composition_root", root)
+    monkeypatch.setattr(comp, "_root", root)
 
 
 @pytest.mark.asyncio

@@ -16,8 +16,9 @@ thought_buffer_size = 10
 
 [context]
 max_stages = 11
-artifact_persist_dir = ".ai-architect/artifacts"
-session_persist_dir = ".ai-architect/sessions"
+data_dir = ".pipeline"
+artifact_persist_dir = ".pipeline/artifacts"
+session_persist_dir = ".pipeline/sessions"
 
 [adapters]
 git_repo_path = "."

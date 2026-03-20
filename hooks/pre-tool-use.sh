@@ -53,10 +53,17 @@ if echo "$TOOL_CMD" | grep -qE "^(cat|head|tail|less|more|read|source)\s"; then
 fi
 # ── END MANDATORY .env protection ─────────────────────────────────────────────
 
-# ── Stage dispatch ────────────────────────────────────────────────────────────
-CURRENT_STAGE="${CURRENT_STAGE:-0}"
+# ── MANDATORY: Context handoff enforcement ──────────────────────────────────
+# Runs on EVERY save_context call. Blocks if upstream stages not loaded.
 HOOK_DIR="$(dirname "$0")/pre-tool-use"
+CURRENT_STAGE="${CURRENT_STAGE:-0}"
 
+if [ -f "$HOOK_DIR/context-handoff-gate.sh" ]; then
+  bash "$HOOK_DIR/context-handoff-gate.sh"
+fi
+# ── END context handoff enforcement ─────────────────────────────────────────
+
+# ── Stage dispatch ────────────────────────────────────────────────────────────
 case "$CURRENT_STAGE" in
   6)
     for hook in "$HOOK_DIR"/stage-6-*.sh; do

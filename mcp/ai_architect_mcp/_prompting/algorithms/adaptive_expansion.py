@@ -46,56 +46,104 @@ class AdaptiveExpansion:
         nodes: list[ThoughtNode] = [root]
         edges: list[ThoughtEdge] = []
 
+        iterations = await self._explore_graph(
+            nodes, edges, context, max_depth,
+            expansion_threshold, min_nodes_before_pruning,
+        )
+
+        return self._assemble_result(prompt, nodes, edges, root_id, iterations)
+
+    async def _explore_graph(
+        self,
+        nodes: list[ThoughtNode],
+        edges: list[ThoughtEdge],
+        context: str,
+        max_depth: int,
+        threshold: float,
+        min_prune: int,
+    ) -> int:
+        """Run the expansion loop, mutating nodes/edges in place.
+
+        Returns:
+            Number of iterations performed.
+        """
         current_depth = 0
         iterations = 0
 
         while current_depth < max_depth:
             iterations += 1
-            leaf_nodes = [
+            leaves = [
                 n for n in nodes
-                if n.depth == current_depth and n.confidence >= expansion_threshold
+                if n.depth == current_depth and n.confidence >= threshold
             ]
-
-            if not leaf_nodes:
+            if not leaves:
                 break
 
-            new_nodes_added = False
-            for leaf in leaf_nodes:
-                child_content = await self._generate_expansion(leaf.content, context)
-                child_confidence = await self._evaluate_node(child_content, context)
-
-                if child_confidence >= expansion_threshold:
-                    child = ThoughtNode(
-                        node_id=uuid4(),
-                        content=child_content,
-                        confidence=round(child_confidence, 4),
-                        depth=current_depth + 1,
-                    )
-                    nodes.append(child)
-                    edges.append(ThoughtEdge(
-                        source_id=leaf.node_id,
-                        target_id=child.node_id,
-                        relationship="expansion",
-                        weight=round(child_confidence, 4),
-                    ))
-                    new_nodes_added = True
-
-            if not new_nodes_added:
+            added = await self._expand_leaves(
+                leaves, nodes, edges, context, threshold, current_depth,
+            )
+            if not added:
                 break
 
-            if len(nodes) >= min_nodes_before_pruning:
-                nodes, edges = self._prune(nodes, edges, expansion_threshold * 0.8)
+            if len(nodes) >= min_prune:
+                pruned_n, pruned_e = self._prune(nodes, edges, threshold * 0.8)
+                nodes.clear()
+                nodes.extend(pruned_n)
+                edges.clear()
+                edges.extend(pruned_e)
 
             current_depth += 1
 
+        return iterations
+
+    async def _expand_leaves(
+        self,
+        leaves: list[ThoughtNode],
+        nodes: list[ThoughtNode],
+        edges: list[ThoughtEdge],
+        context: str,
+        threshold: float,
+        depth: int,
+    ) -> bool:
+        """Expand all leaf nodes, appending children to nodes/edges.
+
+        Returns:
+            True if at least one child was added.
+        """
+        added = False
+        for leaf in leaves:
+            content = await self._generate_expansion(leaf.content, context)
+            confidence = await self._evaluate_node(content, context)
+
+            if confidence >= threshold:
+                child = ThoughtNode(
+                    node_id=uuid4(), content=content,
+                    confidence=round(confidence, 4), depth=depth + 1,
+                )
+                nodes.append(child)
+                edges.append(ThoughtEdge(
+                    source_id=leaf.node_id, target_id=child.node_id,
+                    relationship="expansion", weight=round(confidence, 4),
+                ))
+                added = True
+        return added
+
+    def _assemble_result(
+        self,
+        prompt: str,
+        nodes: list[ThoughtNode],
+        edges: list[ThoughtEdge],
+        root_id: object,
+        iterations: int,
+    ) -> EnhancedPrompt:
+        """Build the final EnhancedPrompt from explored graph."""
         graph = ThoughtGraph(nodes=nodes, edges=edges, root_id=root_id)
         best_path = self._extract_best_path(graph)
         enhanced = self._synthesize(prompt, best_path)
         avg_confidence = sum(n.confidence for n in nodes) / max(len(nodes), 1)
 
         return EnhancedPrompt(
-            original=prompt,
-            enhanced=enhanced,
+            original=prompt, enhanced=enhanced,
             strategy_used="adaptive_expansion",
             confidence=round(min(1.0, avg_confidence), 4),
             iterations=iterations,

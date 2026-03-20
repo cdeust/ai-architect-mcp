@@ -108,7 +108,20 @@ For each file in dependency order:
   )
 ```
 
-### 4. Synthesise and verify integration
+### 4. Pre-commit impact check (if codebase intelligence engine available)
+
+If codebase intelligence engine is available, verify multi-file changes before committing:
+```
+ai_architect_codebase_impact(
+  target="{modified_function}",
+  direction="downstream",
+  repo_path="{target_repo}"
+)
+→ Traces call chains from modified code to callers
+→ Ensures no unexpected downstream breakage
+```
+
+### 5. Synthesise and verify integration
 
 After all workers complete:
 
@@ -132,7 +145,7 @@ ai_architect_fs_read(path="{composition_root_file}")
 → All new adapters wired to their ports
 ```
 
-### 5. Write implementation manifest
+### 6. Write implementation manifest
 
 ```
 ai_architect_save_context(
@@ -156,12 +169,12 @@ ai_architect_save_context(
 )
 
 ai_architect_fs_write(
-  path=".ai-architect/artifacts/stage-6-implementation-manifest.json",
+  path="{data_dir}/artifacts/stage-6-implementation-manifest.json",
   content={implementation manifest JSON}
 )
 ```
 
-### 6. Update pipeline state and audit
+### 7. Update pipeline state and audit
 
 ```
 ai_architect_save_session_state(session_id="{sessionID}", state={
@@ -206,7 +219,7 @@ ai_architect_emit_ooda_checkpoint(stage="stage-6", checks={
 | Artifact | Location | Schema |
 |----------|----------|--------|
 | Code on branch | `pipeline/{findingID}` | Git branch with implementation commits |
-| `stage-6-implementation-manifest.json` | `.ai-architect/artifacts/` | `{findingID, branch, filesChanged, totalFiles, totalCommits}` |
+| `stage-6-implementation-manifest.json` | `{data_dir}/artifacts/` | `{findingID, branch, filesChanged, totalFiles, totalCommits}` |
 | StageContext[stage-6] | `ai_architect_save_context` | Same as manifest |
 | PipelineState update | `ai_architect_save_session_state` | `{currentStage: 7}` |
 

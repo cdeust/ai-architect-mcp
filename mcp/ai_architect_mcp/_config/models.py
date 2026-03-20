@@ -83,12 +83,16 @@ class ContextSection(BaseModel):
         ge=1,
         description="Total number of pipeline stages (0-10)",
     )
+    data_dir: str = Field(
+        default=".pipeline",
+        description="Root data directory for pipeline state and artifacts",
+    )
     artifact_persist_dir: str = Field(
-        default=".ai-architect/artifacts",
+        default=".pipeline/artifacts",
         description="Directory for persisting stage artifacts",
     )
     session_persist_dir: str = Field(
-        default=".ai-architect/sessions",
+        default=".pipeline/sessions",
         description="Directory for session state persistence",
     )
 

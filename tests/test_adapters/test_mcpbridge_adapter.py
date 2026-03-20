@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from ai_architect_mcp._adapters.mcp_result_parser import extract_mcp_data
 from ai_architect_mcp._adapters.xcode_mcpbridge_adapter import (
     MCPBRIDGE_TOOL_BUILD,
     MCPBRIDGE_TOOL_GREP,
@@ -147,24 +148,21 @@ class TestXcodeMCPBridgeAdapter:
         assert len(result) == 1
         assert result[0]["file"] == "a.swift"
 
-    @pytest.mark.asyncio
-    async def test_extract_data_string_json(self, adapter: XcodeMCPBridgeAdapter) -> None:
+    def test_extract_data_string_json(self) -> None:
         raw = '{"success": true, "output": "done"}'
-        data = adapter._extract_data(raw)
+        data = extract_mcp_data(raw)
         assert data["success"] is True
 
-    @pytest.mark.asyncio
-    async def test_extract_data_plain_string(self, adapter: XcodeMCPBridgeAdapter) -> None:
+    def test_extract_data_plain_string(self) -> None:
         raw = "not json"
-        data = adapter._extract_data(raw)
+        data = extract_mcp_data(raw)
         assert data["output"] == "not json"
 
-    @pytest.mark.asyncio
-    async def test_extract_data_content_block(self, adapter: XcodeMCPBridgeAdapter) -> None:
+    def test_extract_data_content_block(self) -> None:
         """Content blocks (list with .text attr) are parsed."""
 
         class FakeContent:
             text = '{"key": "value"}'
 
-        data = adapter._extract_data([FakeContent()])
+        data = extract_mcp_data([FakeContent()])
         assert data["key"] == "value"

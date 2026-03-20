@@ -22,12 +22,25 @@ NOT FOR: PRD review — that is stage 5, implementation — stage 6, plan interv
 
 ## Before you start
 
-1. `ai_architect_load_context(stage="stage-3", finding_id="{findingID}")` — load integration design from Stage 3
-2. `ai_architect_load_session_state(session_id="{sessionID}")` — confirm currentStage = 4, check retryCount
-3. `ai_architect_list_experience_patterns(category="solution")` — load solution patterns for PRD enrichment
-4. `ai_architect_query_context(query="PRDExample records for findingType={finding_type}")` — load few-shot examples
+**MANDATORY: Load ALL upstream artifacts. Do NOT proceed without them.**
+
+1. `ai_architect_load_context(stage_id=1, finding_id="{findingID}")` — load Stage 1 findings (finding details, relevance scores, source material, codebase matches)
+2. `ai_architect_load_context(stage_id=2, finding_id="{findingID}")` — load Stage 2 impact map (compound score, propagation paths, affected engines, cascade points)
+3. `ai_architect_load_context(stage_id=3, finding_id="{findingID}")` — load Stage 3 integration design (affected ports, adapter changes, file manifest, architecture decisions)
+4. `ai_architect_load_session_state(session_id="{sessionID}")` — confirm currentStage = 4, check retryCount
+5. `ai_architect_list_experience_patterns(category="solution")` — load solution patterns for PRD enrichment
+6. `ai_architect_query_context(query="PRDExample records for findingType={finding_type}")` — load few-shot examples
+
+**MANDATORY: Load codebase intelligence (if available from Stage 0 health report).**
+
+7. `ai_architect_codebase_query(query="{finding_keywords}", repo_path="{target_repo}")` — execution flows related to the finding
+8. `ai_architect_codebase_context(name="{primary_affected_symbol}", include_source=true, repo_path="{target_repo}")` — full source code + callers + callees of the primary symbol being changed
+9. `ai_architect_codebase_context(name="{caller_symbol}", include_source=true, repo_path="{target_repo}")` — for each direct caller identified in Stage 2
+
+**All loaded data forms `upstream_context` — this is the input to PRD generation. Not optional. Not skippable.**
 
 Missing Stage 3 integration design = BLOCK. Cannot generate PRD without integration blueprint.
+Missing Stage 1 or Stage 2 = BLOCK. PRD requires finding details and impact analysis.
 
 ## Input contract
 
@@ -96,7 +109,7 @@ ai_architect_save_context(
 )
 
 ai_architect_fs_write(
-  path=".ai-architect/artifacts/stage-4-clarification-report.md",
+  path="{data_dir}/artifacts/stage-4-clarification-report.md",
   content={clarification report markdown}
 )
 ```
@@ -117,15 +130,49 @@ ai_architect_enhance_prompt(
 → Returns enhanced prompt with ExperiencePatterns + PRD examples + ClarificationReport
 ```
 
-### 6. Delegate to ai-prd-generator plugin
+### 6. Delegate to ai-prd-generator plugin WITH full upstream context
 
-Generate all 9 PRD files via the ai-prd-generator skill at `/Users/cdeust/Developments/ai-prd-generator-plugin/`. The plugin handles:
-- PRD context detection (8 types)
+**CRITICAL: The PRD generator MUST receive all upstream context as its input argument.** Do NOT invoke the skill with a generic description. Serialize the actual data.
+
+Build the PRD generator input from upstream_context:
+
+```
+prd_input = {
+  "context_type": "feature",
+  "finding": upstream_context.stage_1_findings,
+  "impact_analysis": upstream_context.stage_2_impact,
+  "integration_design": upstream_context.stage_3_integration,
+  "codebase_intelligence": {
+    "source": "ai_codebase_intelligence",
+    "primary_symbol": {codebase intelligence symbol context with source code},
+    "callers": {codebase intelligence caller contexts with source code},
+    "execution_flows": {codebase intelligence query results},
+    "affected_files": upstream_context.stage_3_integration.fileChangeManifest
+  },
+  "clarification_report": {from step 4 above},
+  "enhanced_prompt": {from step 5 above}
+}
+```
+
+Invoke the PRD generator skill with this serialized context as the args:
+
+```
+Skill("ai-prd-generator:generate-prd", args=JSON.stringify(prd_input))
+```
+
+The plugin handles:
+- PRD context detection (8 types) — pre-set to "feature" from pipeline
 - Section-by-section generation with verification
 - 64 hard output rules enforcement
-- 9-file automated export
+- 9-file automated export to `{data_dir}/prd/`
 
-The plugin writes:
+**The plugin MUST use the codebase intelligence data:**
+- `primary_symbol` source code → Technical Specification code examples must reference real code
+- `callers` → Impact section must list actual callers, not guesses
+- `execution_flows` → Architecture section must show real dependency chains
+- `affected_files` → File change manifest from Stage 3, not invented
+
+The plugin writes to `{data_dir}/prd/`:
 - `prd-overview.md`
 - `prd-requirements.md`
 - `prd-user-stories.md`
@@ -258,8 +305,8 @@ ai_architect_emit_ooda_checkpoint(stage="stage-4", checks={
 
 | Artifact | Location | Schema |
 |----------|----------|--------|
-| 9 PRD files | `.ai-architect/prd/` | `prd-overview.md`, `prd-requirements.md`, `prd-user-stories.md`, `prd-technical.md`, `prd-acceptance.md`, `prd-roadmap.md`, `prd-jira.md`, `prd-tests.md`, `prd-verification.md` |
-| `stage-4-clarification-report.md` | `.ai-architect/artifacts/` | `{questions, answers, mode, timestamp}` |
+| 9 PRD files | `{data_dir}/prd/` | `prd-overview.md`, `prd-requirements.md`, `prd-user-stories.md`, `prd-technical.md`, `prd-acceptance.md`, `prd-roadmap.md`, `prd-jira.md`, `prd-tests.md`, `prd-verification.md` |
+| `stage-4-clarification-report.md` | `{data_dir}/artifacts/` | `{questions, answers, mode, timestamp}` |
 | StageContext[stage-4] | `ai_architect_save_context` | `{prdFiles, compoundScore, horResults, verificationResults}` |
 | PipelineState update | `ai_architect_save_session_state` | `{currentStage: 4.5}` |
 

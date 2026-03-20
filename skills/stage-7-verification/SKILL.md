@@ -163,7 +163,7 @@ ai_architect_save_context(
 )
 
 ai_architect_fs_write(
-  path=".ai-architect/artifacts/stage-7-hor-report.json",
+  path="{data_dir}/artifacts/stage-7-hor-report.json",
   content={HOR report JSON}
 )
 
@@ -228,7 +228,7 @@ ai_architect_emit_ooda_checkpoint(stage="stage-7", checks={
 
 | Artifact | Location | Schema |
 |----------|----------|--------|
-| `stage-7-hor-report.json` | `.ai-architect/artifacts/` | `{findingID, horResults, horPassRate, buildResult, graphVerification, compoundScore}` |
+| `stage-7-hor-report.json` | `{data_dir}/artifacts/` | `{findingID, horResults, horPassRate, buildResult, graphVerification, compoundScore}` |
 | StageContext[stage-7] | `ai_architect_save_context` | Same as HOR report |
 | AuditEvent | `ai_architect_append_audit_event` | `{type, stage, outcome, compoundScore, retryCount}` |
 

@@ -185,7 +185,7 @@ class GitHubActionsGit(GitOperationsPort):
 
         safe_name = branch_name.replace("/", "-")
         worktree_dir = tempfile.mkdtemp(
-            prefix=f"ai-architect-{safe_name}-",
+            prefix=f"pipeline-{safe_name}-",
         )
         await self._run(
             "worktree", "add", worktree_dir,

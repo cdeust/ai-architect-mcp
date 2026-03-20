@@ -1,26 +1,13 @@
-"""Adapter tools — git, GitHub, filesystem operations via ports.
-
-Xcode tools are in xcode_tools.py (split for the 300-line limit).
-"""
+"""Adapter tools — git, GitHub, filesystem operations via ports."""
 
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
 
-from ai_architect_mcp._adapters.composition_root import CompositionRoot
 from ai_architect_mcp._app import mcp
 from ai_architect_mcp._observability.instrumentation import observe_tool_call
-
-_root: CompositionRoot | None = None
-
-
-def _get_root() -> CompositionRoot:
-    """Get or create the composition root."""
-    global _root
-    if _root is None:
-        _root = CompositionRoot()
-    return _root
+from ai_architect_mcp._tools._composition import get_root
 
 
 @mcp.tool(
@@ -45,7 +32,7 @@ async def ai_architect_git_branch(
     Returns:
         Dict with branch reference.
     """
-    git = _get_root().create_git()
+    git = get_root().create_git()
     ref = await git.create_branch(branch_name, base)
     return {"branch": ref}
 
@@ -78,7 +65,7 @@ async def ai_architect_git_commit(
         from ai_architect_mcp._adapters.git_adapter import GitAdapter
         git = GitAdapter(repo_path=worktree_path)
     else:
-        git = _get_root().create_git()
+        git = get_root().create_git()
     sha = await git.commit(message, files)
     return {"sha": sha}
 
@@ -111,7 +98,7 @@ async def ai_architect_git_push(
         from ai_architect_mcp._adapters.git_adapter import GitAdapter
         git = GitAdapter(repo_path=worktree_path)
     else:
-        git = _get_root().create_git()
+        git = get_root().create_git()
     await git.push(branch, force=force)
     return {"status": "pushed", "branch": branch}
 
@@ -142,7 +129,7 @@ async def ai_architect_git_worktree_add(
     Returns:
         Dict with worktree_path and branch.
     """
-    git = _get_root().create_git()
+    git = get_root().create_git()
     path = await git.create_worktree(branch_name, base)
     return {"worktree_path": path, "branch": f"refs/heads/{branch_name}"}
 
@@ -169,7 +156,7 @@ async def ai_architect_git_worktree_remove(
     Returns:
         Confirmation dict.
     """
-    git = _get_root().create_git()
+    git = get_root().create_git()
     await git.remove_worktree(worktree_path)
     return {"status": "removed", "worktree_path": worktree_path}
 
@@ -196,7 +183,7 @@ async def ai_architect_git_diff(
     Returns:
         Dict with diff content.
     """
-    git = _get_root().create_git()
+    git = get_root().create_git()
     diff = await git.diff(base, head)
     return {"diff": diff}
 
@@ -227,7 +214,7 @@ async def ai_architect_github_create_pr(
     Returns:
         PR metadata dict.
     """
-    github = _get_root().create_github()
+    github = get_root().create_github()
     return await github.create_pull_request(title, body, head, base)
 
 
@@ -251,7 +238,7 @@ async def ai_architect_fs_read(
     Returns:
         Dict with file content.
     """
-    fs = _get_root().create_filesystem()
+    fs = get_root().create_filesystem()
     content = await fs.read(Path(path))
     return {"path": path, "content": content}
 
@@ -284,7 +271,7 @@ async def ai_architect_fs_write(
         from ai_architect_mcp._adapters.filesystem_adapter import FileSystemAdapter
         fs = FileSystemAdapter(project_root=Path(worktree_path))
     else:
-        fs = _get_root().create_filesystem()
+        fs = get_root().create_filesystem()
     await fs.write(Path(path), content)
     return {"status": "written", "path": path}
 
@@ -307,10 +294,7 @@ async def ai_architect_fs_list(
     Args:
         path: Directory path.
         pattern: Glob pattern.
-
-    Returns:
-        Dict with file list.
     """
-    fs = _get_root().create_filesystem()
+    fs = get_root().create_filesystem()
     files = await fs.list_directory(Path(path), pattern)
     return {"path": path, "pattern": pattern, "files": [str(f) for f in files]}

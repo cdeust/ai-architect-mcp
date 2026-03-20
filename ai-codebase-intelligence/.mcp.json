@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "codebase-intelligence": {
+      "command": "python3",
+      "args": ["-m", "ai_codebase_intelligence.server"],
+      "env": {
+        "PYTHONPATH": "src"
+      }
+    }
+  }
+}

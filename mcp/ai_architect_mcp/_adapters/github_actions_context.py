@@ -12,7 +12,7 @@ from typing import Any
 
 from ai_architect_mcp._adapters.ports import StageContextPort
 
-ARTIFACTS_DIR = ".ai-architect/artifacts"
+DEFAULT_ARTIFACTS_DIR = ".pipeline/artifacts"
 
 
 class GitHubActionsContext(StageContextPort):
@@ -20,15 +20,21 @@ class GitHubActionsContext(StageContextPort):
 
     Args:
         workspace: Root workspace directory.
+        artifacts_dir: Relative path to artifacts directory within workspace.
     """
 
-    def __init__(self, workspace: Path) -> None:
+    def __init__(
+        self,
+        workspace: Path,
+        artifacts_dir: str = DEFAULT_ARTIFACTS_DIR,
+    ) -> None:
         """Initialize the GHA context adapter.
 
         Args:
             workspace: Workspace root for artifact storage.
+            artifacts_dir: Relative path to artifacts directory.
         """
-        self._root = workspace / ARTIFACTS_DIR
+        self._root = workspace / artifacts_dir
 
     async def load_artifact(
         self, stage_id: int, finding_id: str,

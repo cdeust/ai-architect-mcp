@@ -4,7 +4,14 @@
       "command": "python3",
       "args": ["-m", "ai_architect_mcp.server"],
       "env": {
-        "PYTHONPATH": "${CLAUDE_PLUGIN_ROOT}/mcp"
+        "PYTHONPATH": "/Users/cdeust/Developments/anthropic/ai-architect/mcp"
+      }
+    },
+    "codebase-intelligence": {
+      "command": "python3",
+      "args": ["-m", "ai_codebase_intelligence"],
+      "env": {
+        "PYTHONPATH": "/Users/cdeust/Developments/anthropic/ai-architect/ai-codebase-intelligence/src"
       }
     }
   }

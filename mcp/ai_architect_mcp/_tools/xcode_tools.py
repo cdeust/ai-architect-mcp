@@ -12,19 +12,9 @@ import os
 from pathlib import Path
 from typing import Any
 
-from ai_architect_mcp._adapters.composition_root import CompositionRoot
 from ai_architect_mcp._app import mcp
 from ai_architect_mcp._observability.instrumentation import observe_tool_call
-
-_root: CompositionRoot | None = None
-
-
-def _get_root() -> CompositionRoot:
-    """Get or create the composition root."""
-    global _root
-    if _root is None:
-        _root = CompositionRoot()
-    return _root
+from ai_architect_mcp._tools._composition import get_root
 
 
 def _is_spm_package(project_path: str) -> bool:
@@ -130,7 +120,7 @@ async def ai_architect_run_build(
     if _is_spm_package(project_path):
         return await _swift_build(project_path, scheme, configuration)
 
-    xcode = _get_root().create_xcode()
+    xcode = get_root().create_xcode()
     return await xcode.build(scheme, configuration)
 
 
@@ -168,5 +158,5 @@ async def ai_architect_run_tests(
     if _is_spm_package(project_path):
         return await _swift_test(project_path, scheme, test_plan)
 
-    xcode = _get_root().create_xcode()
+    xcode = get_root().create_xcode()
     return await xcode.run_tests(scheme, test_plan)

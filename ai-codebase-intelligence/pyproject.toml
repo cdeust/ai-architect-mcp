@@ -1,0 +1,72 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ai-codebase-intelligence"
+version = "0.1.0"
+description = "Language-agnostic codebase intelligence engine with MCP integration"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [
+    { name = "AI Architect", email = "admin@ai-architect.tools" },
+]
+keywords = ["codebase", "intelligence", "mcp", "static-analysis", "graph"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Code Generators",
+]
+dependencies = [
+    "fastmcp>=2.0",
+    "tree-sitter>=0.22",
+    "tree-sitter-python>=0.23",
+    "tree-sitter-javascript>=0.23",
+    "tree-sitter-typescript>=0.23",
+    "tree-sitter-java>=0.23",
+    "tree-sitter-kotlin>=1.0",
+    "tree-sitter-c-sharp>=0.23",
+    "tree-sitter-go>=0.23",
+    "tree-sitter-rust>=0.23",
+    "tree-sitter-php>=0.23",
+    "tree-sitter-ruby>=0.23",
+    "tree-sitter-c>=0.23",
+    "tree-sitter-cpp>=0.23",
+    "tree-sitter-swift>=0.0.1",
+    "kuzu>=0.4",
+    "pydantic>=2.0",
+    "leidenalg>=0.10",
+    "python-igraph>=0.11",
+    "gitpython>=3.1",
+    "typer>=0.12",
+]
+
+[project.optional-dependencies]
+embeddings = [
+    "sentence-transformers>=2.0",
+]
+server = [
+    "uvicorn>=0.30",
+    "starlette>=0.37",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+all = [
+    "ai-codebase-intelligence[embeddings,server,dev]",
+]
+
+[project.scripts]
+ai-codebase-intelligence = "ai_codebase_intelligence._cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai_codebase_intelligence"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

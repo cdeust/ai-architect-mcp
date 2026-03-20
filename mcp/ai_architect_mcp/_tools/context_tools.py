@@ -5,19 +5,9 @@ from __future__ import annotations
 from typing import Any
 
 from ai_architect_mcp._context.handoff import HandoffDocument
-from ai_architect_mcp._context.stage_context import StageContext
 from ai_architect_mcp._app import mcp
 from ai_architect_mcp._observability.instrumentation import observe_tool_call
-
-_context: StageContext | None = None
-
-
-def _get_context() -> StageContext:
-    """Get or create the singleton stage context."""
-    global _context
-    if _context is None:
-        _context = StageContext()
-    return _context
+from ai_architect_mcp._tools._composition import get_context
 
 
 @mcp.tool(
@@ -37,7 +27,7 @@ async def ai_architect_load_context(
     Returns:
         The stage artifact as a dictionary.
     """
-    ctx = _get_context()
+    ctx = get_context()
     return await ctx.load(stage_id, finding_id)
 
 
@@ -60,7 +50,7 @@ async def ai_architect_save_context(
     Returns:
         Confirmation with stage_id and finding_id.
     """
-    ctx = _get_context()
+    ctx = get_context()
     await ctx.save(stage_id, finding_id, artifact)
     return {"status": "saved", "stage_id": str(stage_id), "finding_id": finding_id}
 
@@ -82,7 +72,7 @@ async def ai_architect_query_context(
     Returns:
         List of matching artifact fragments.
     """
-    ctx = _get_context()
+    ctx = get_context()
     return await ctx.query(finding_id, query)
 
 

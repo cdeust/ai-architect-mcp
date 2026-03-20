@@ -63,6 +63,24 @@ class MultiAgentDebate:
             score = await self._independent_assessment(claim, agent_idx)
             agent_scores[agent_idx].append(score)
 
+        rounds, converged = await self._run_debate_rounds(
+            claim, agent_scores, num_agents, max_rounds,
+        )
+
+        return self._build_report(claim, agent_scores, rounds, converged)
+
+    async def _run_debate_rounds(
+        self,
+        claim: VerificationClaim,
+        agent_scores: list[list[float]],
+        num_agents: int,
+        max_rounds: int,
+    ) -> tuple[int, bool]:
+        """Execute iterative debate rounds until convergence or max.
+
+        Returns:
+            Tuple of (rounds_completed, converged).
+        """
         current_round = 1
         converged = False
 
@@ -75,23 +93,27 @@ class MultiAgentDebate:
                     s for i, s in enumerate(last_scores) if i != agent_idx
                 ]
                 refined = await self._refine_assessment(
-                    claim,
-                    agent_scores[agent_idx][-1],
-                    other_scores,
-                    agent_idx,
+                    claim, agent_scores[agent_idx][-1],
+                    other_scores, agent_idx,
                 )
                 agent_scores[agent_idx].append(refined)
 
             final_scores = [scores[-1] for scores in agent_scores]
-            variance = self._variance(final_scores)
-            converged = variance < CONVERGENCE_THRESHOLD
+            converged = self._variance(final_scores) < CONVERGENCE_THRESHOLD
 
+        return current_round, converged
+
+    def _build_report(
+        self,
+        claim: VerificationClaim,
+        agent_scores: list[list[float]],
+        rounds: int,
+        converged: bool,
+    ) -> VerificationReport:
+        """Assemble the VerificationReport from debate results."""
         final_scores = [scores[-1] for scores in agent_scores]
         avg_score = sum(final_scores) / len(final_scores)
-
-        confidence = (
-            CONVERGED_CONFIDENCE if converged else UNCONVERGED_CONFIDENCE
-        )
+        confidence = CONVERGED_CONFIDENCE if converged else UNCONVERGED_CONFIDENCE
 
         evaluations = [
             ClaimEvaluation(
@@ -99,13 +121,8 @@ class MultiAgentDebate:
                 evaluator_id=f"debate_agent_{i}",
                 score=round(score, 4),
                 confidence=confidence,
-                verdict=(
-                    Verdict.PASS if score >= PASS_THRESHOLD else Verdict.FAIL
-                ),
-                reasoning=(
-                    f"Agent {i} final assessment "
-                    f"after {current_round} rounds"
-                ),
+                verdict=Verdict.PASS if score >= PASS_THRESHOLD else Verdict.FAIL,
+                reasoning=f"Agent {i} final assessment after {rounds} rounds",
             )
             for i, score in enumerate(final_scores)
         ]

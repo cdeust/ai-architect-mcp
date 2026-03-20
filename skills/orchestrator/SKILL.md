@@ -22,9 +22,10 @@ NOT FOR: generating PRDs, writing code, running tests, verification, discovery s
 
 ## Before you start
 
+0. Call `ai_architect_init_pipeline(target_repo_path="{target_repo}")` once to set session context for the target repository. This initializes the shared composition root and stage context with the correct `{data_dir}`.
 1. Load `ai_architect_load_session_state` — read `PipelineState` (currentStage, activeFindingID, retryCount, loadedSkillVersions)
 2. Load `ai_architect_list_experience_patterns` — retrieve non-decayed patterns for context enrichment
-3. Read `artifacts/blueprint-signoff.json` via `ai_architect_fs_read` — **BLOCK if absent**. Blueprint signoff must exist before Stage 0 can run.
+3. Read `{data_dir}/artifacts/blueprint-signoff.json` via `ai_architect_fs_read` — **BLOCK if absent**. Blueprint signoff must exist before Stage 0 can run.
 4. Load `ai_architect_check_context_budget` — verify context usage < 70%. If ≥ 70%, switch to L2 summaries. If ≥ 93%, create handoff and compact.
 
 Missing blueprint-signoff.json = BLOCK. Do not proceed.
@@ -33,9 +34,9 @@ Missing blueprint-signoff.json = BLOCK. Do not proceed.
 
 | Field | Type | Source | Required |
 |-------|------|--------|----------|
-| `blueprint-signoff.json` | JSON | `artifacts/` | YES — BLOCK if absent |
+| `blueprint-signoff.json` | JSON | `{data_dir}/artifacts/` | YES — BLOCK if absent |
 | `PipelineState` | object | `ai_architect_load_session_state` | YES |
-| `skill-version-manifest.json` | JSON | `artifacts/` | YES — BLOCK if versions mismatch |
+| `skill-version-manifest.json` | JSON | `{data_dir}/artifacts/` | YES — BLOCK if versions mismatch |
 | `ExperiencePatterns` | list | `ai_architect_list_experience_patterns` | NO — proceed without |
 
 ## Operations
@@ -43,10 +44,10 @@ Missing blueprint-signoff.json = BLOCK. Do not proceed.
 ### 1. Validate prerequisites
 
 ```
-ai_architect_fs_read(path="artifacts/blueprint-signoff.json")
+ai_architect_fs_read(path="{data_dir}/artifacts/blueprint-signoff.json")
 → BLOCK if file missing or signoff.approved == false
 
-ai_architect_fs_read(path="artifacts/skill-version-manifest.json")
+ai_architect_fs_read(path="{data_dir}/artifacts/skill-version-manifest.json")
 → Compare each skill version against SKILL.md frontmatter version fields
 → BLOCK if any version mismatch (stale skill = stale logic)
 ```
@@ -79,6 +80,20 @@ ai_architect_git_worktree_add(branch="pipeline/{findingID}", path=".worktrees/{f
 
 Execute stages in strict sequence. Each stage is a separate SKILL.md read + execute cycle.
 
+**MANDATORY CONTEXT HANDOFF — enforced at every stage boundary:**
+
+Before executing stage N, the orchestrator MUST:
+1. Call `ai_architect_load_context(stage_id=K, finding_id="{findingID}")` for **every** upstream stage K (0 through N-1)
+2. Collect the returned artifacts into a `upstream_context` dict keyed by stage ID
+3. If any required upstream artifact is missing (per the stage's input contract), BLOCK
+4. Pass `upstream_context` as structured input when executing the stage
+
+This is the pipeline's core contract: **context flows forward**. A stage that runs without its upstream artifacts is a pipeline violation.
+
+**MANDATORY CODEBASE INTELLIGENCE — when codebase intelligence engine is available:**
+
+If Stage 0 health report contains `codebase_intelligence: "ai_codebase_intelligence"`, the orchestrator MUST query the codebase intelligence engine for codebase context relevant to the finding BEFORE each stage that needs it (stages 1-6). The codebase intelligence results are included in `upstream_context` under key `"codebase_intelligence"`.
+
 ```
 Stage 0: skills/stage-0-health/SKILL.md      → stage-0-health-report.json
 Stage 1: skills/stage-1-discovery/SKILL.md    → stage-1-findings.json
@@ -92,6 +107,35 @@ Stage 7: skills/stage-7-verification/SKILL.md → stage-7-hor-report.json
 Stage 8: skills/stage-8-benchmark/SKILL.md    → stage-8-benchmark-report.json
 Stage 9: skills/stage-9-deployment/SKILL.md   → stage-9-test-report.json
 Stage 10: skills/stage-10-pr/SKILL.md         → stage-10-pr-manifest.json
+```
+
+**Example: before executing Stage 4 (PRD generation):**
+```
+# Load ALL upstream artifacts
+stage_0 = ai_architect_load_context(stage_id=0, finding_id="{findingID}")
+stage_1 = ai_architect_load_context(stage_id=1, finding_id="{findingID}")
+stage_2 = ai_architect_load_context(stage_id=2, finding_id="{findingID}")
+stage_3 = ai_architect_load_context(stage_id=3, finding_id="{findingID}")
+
+# Load codebase intelligence (if available)
+codebase_query = ai_architect_codebase_query(query="{finding_keywords}", repo_path="{target_repo}")
+codebase_symbols = ai_architect_codebase_context(name="{primary_symbol}", include_source=true, repo_path="{target_repo}")
+
+# Package as upstream_context — this IS the input to Stage 4
+upstream_context = {
+  "stage_0_health": stage_0,
+  "stage_1_findings": stage_1,
+  "stage_2_impact": stage_2,
+  "stage_3_integration": stage_3,
+  "codebase_intelligence": {
+    "query_results": codebase_query,
+    "symbol_details": codebase_symbols
+  }
+}
+
+# NOW execute Stage 4 with full context
+→ Read skills/stage-4-prd/SKILL.md
+→ Execute with upstream_context available
 ```
 
 At each stage transition:
@@ -174,6 +218,8 @@ ai_architect_emit_ooda_checkpoint(stage="orchestrator", checks={
 - [ ] All active findings have a git worktree?
 - [ ] Context budget under 70%?
 - [ ] All retry counts under max (3)?
+- [ ] Context handoff markers present for all completed stages? (check `{data_dir}/context_loads/`)
+- [ ] Codebase intelligence loaded for stages that need it (1-6)?
 
 ## Expected output
 

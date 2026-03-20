@@ -11,6 +11,7 @@ from ai_architect_mcp._prompting.confidence_fusion import ConfidenceFusionEngine
 from ai_architect_mcp._prompting.strategies.registry import StrategyRegistry
 from ai_architect_mcp._app import mcp
 from ai_architect_mcp._observability.instrumentation import observe_tool_call
+from ai_architect_mcp._tools._composition import get_root
 
 
 @mcp.tool(
@@ -32,7 +33,7 @@ async def ai_architect_enhance_prompt(
     Returns:
         EnhancedPrompt as a dictionary.
     """
-    trm = TRMRefinement()
+    trm = TRMRefinement(client=get_root().create_llm_client())
     result = await trm.refine(prompt, context, max_iterations=max_iterations)
     return result.model_dump(mode="json")
 
@@ -101,7 +102,7 @@ async def ai_architect_expand_thought(
     Returns:
         EnhancedPrompt as a dictionary.
     """
-    expander = AdaptiveExpansion()
+    expander = AdaptiveExpansion(client=get_root().create_llm_client())
     result = await expander.expand(prompt, context, max_depth=max_depth)
     return result.model_dump(mode="json")
 
@@ -125,6 +126,6 @@ async def ai_architect_refine_prompt(
     Returns:
         EnhancedPrompt as a dictionary.
     """
-    trm = TRMRefinement()
+    trm = TRMRefinement(client=get_root().create_llm_client())
     result = await trm.refine(prompt, context, max_iterations=max_iterations)
     return result.model_dump(mode="json")

@@ -26,6 +26,7 @@ from ai_architect_mcp._verification.algorithms.nli_entailment import NLIEntailme
 from ai_architect_mcp._verification.consensus_router import get_consensus_algorithm
 from ai_architect_mcp._app import mcp
 from ai_architect_mcp._observability.instrumentation import observe_tool_call
+from ai_architect_mcp._tools._composition import get_root
 
 
 @mcp.tool(
@@ -55,7 +56,7 @@ async def ai_architect_verify_claim(
         source=ClaimSource.GENERATION,
         priority=priority,
     )
-    cov = ChainOfVerification()
+    cov = ChainOfVerification(client=get_root().create_llm_client())
     result = await cov.verify(claim, context)
     return result.model_dump(mode="json")
 
@@ -108,7 +109,7 @@ async def ai_architect_evaluate_nli(
         source=ClaimSource.GENERATION,
         priority=50,
     )
-    evaluator = NLIEntailmentEvaluator(strict=strict)
+    evaluator = NLIEntailmentEvaluator(client=get_root().create_llm_client(), strict=strict)
     result = await evaluator.evaluate(claim, premise)
     return result.model_dump(mode="json")
 
@@ -138,7 +139,7 @@ async def ai_architect_debate_claim(
         source=ClaimSource.GENERATION,
         priority=50,
     )
-    debate = MultiAgentDebate()
+    debate = MultiAgentDebate(client=get_root().create_llm_client())
     report = await debate.debate(claim, num_agents=num_agents, max_rounds=max_rounds)
     return report.model_dump(mode="json")
 
