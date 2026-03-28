@@ -63,7 +63,7 @@ ai_architect_load_session_state(session_id="{sessionID}")
 ### 3. Load findings queue
 
 ```
-ai_architect_query_context(query="findings queue sorted by compound impact score descending")
+ai_architect_query_context(finding_id="{findingID}", query="findings queue sorted by compound impact score descending")
 → Returns ranked list of findings awaiting processing
 → Each finding gets its own StageContext namespace keyed by findingID
 ```
@@ -71,8 +71,8 @@ ai_architect_query_context(query="findings queue sorted by compound impact score
 ### 4. Per-finding: create isolated worktree
 
 ```
-ai_architect_git_worktree_add(branch="pipeline/{findingID}", path=".worktrees/{findingID}")
-→ One worktree per finding — context isolation enforced
+ai_architect_git_worktree_add(branch_name="pipeline/{findingID}", base="main")
+→ Returns worktree path — one worktree per finding, context isolation enforced
 → No two agents share a worktree or StageContext namespace
 ```
 
@@ -118,8 +118,8 @@ stage_2 = ai_architect_load_context(stage_id=2, finding_id="{findingID}")
 stage_3 = ai_architect_load_context(stage_id=3, finding_id="{findingID}")
 
 # Load codebase intelligence (if available)
-codebase_query = ai_architect_codebase_query(query="{finding_keywords}", repo_path="{target_repo}")
-codebase_symbols = ai_architect_codebase_context(name="{primary_symbol}", include_source=true, repo_path="{target_repo}")
+codebase_query = ai_architect_codebase_query(query="{finding_keywords}", repo="{target_repo}")
+codebase_symbols = ai_architect_codebase_context(name="{primary_symbol}", include_content=true, repo="{target_repo}")
 
 # Package as upstream_context — this IS the input to Stage 4
 upstream_context = {
@@ -140,18 +140,22 @@ upstream_context = {
 
 At each stage transition:
 ```
-ai_architect_save_session_state(session_id="{sessionID}", state={
-  "currentStage": N+1,
-  "activeFindingID": "{findingID}",
-  "retryCount": 0
+ai_architect_save_session_state(state_data={
+  "session_id": "{sessionID}",
+  "finding_id": "{findingID}",
+  "current_stage": N+1,
+  "status": "running",
+  "completed_stages": [0, 1, ..., N]
 })
 
-ai_architect_append_audit_event(event={
-  "type": "stage_transition",
-  "from_stage": N,
-  "to_stage": N+1,
-  "findingID": "{findingID}",
-  "timestamp": "{ISO8601}"
+ai_architect_append_audit_event(event_data={
+  "event_id": "stage-transition-{findingID}-{N}-to-{N+1}",
+  "session_id": "{sessionID}",
+  "stage_id": N,
+  "tool_name": "orchestrator",
+  "outcome": "pass",
+  "message": "Stage transition for finding {findingID}: stage {N} → stage {N+1}",
+  "metadata": {"from_stage": "{N}", "to_stage": "{N+1}"}
 })
 ```
 
@@ -167,48 +171,49 @@ ai_architect_append_audit_event(event={
 - Max 3 retries. After 3: escalate to human review.
 
 ```
-ai_architect_save_session_state(session_id="{sessionID}", state={
-  "currentStage": {retry_target_stage},
-  "retryCount": {current + 1},
-  "retryReason": "{failed_rule_or_gate}"
+ai_architect_save_session_state(state_data={
+  "session_id": "{sessionID}",
+  "finding_id": "{findingID}",
+  "current_stage": {retry_target_stage},
+  "status": "running",
+  "completed_stages": [0, 1, ..., {retry_target_stage - 1}],
+  "metadata": {"retry_count": "{current + 1}", "retry_reason": "{failed_rule_or_gate}"}
 })
 ```
 
 ### 7. Context budget management
 
 ```
-ai_architect_check_context_budget()
+ai_architect_check_context_budget(total_tokens={model_context_limit}, used_tokens={current_usage})
 → If usage ≥ 70%: switch to L2 summaries (load config + summaries only)
 → If usage ≥ 93%: auto-create handoff and compact
 
 ai_architect_create_handoff(
-  finding_id="{findingID}",
-  stage_reached=N,
-  completed_work=[...],
-  open_tasks=[...],
-  loading_order=[...]
+  completed=[...],
+  in_progress=[...],
+  blocked=[...],
+  next_actions=[...],
+  session_id="{sessionID}"
 )
 ```
 
 ### 8. Cleanup on completion
 
 ```
-ai_architect_git_worktree_remove(path=".worktrees/{findingID}")
+ai_architect_git_worktree_remove(worktree_path="{worktree_path_from_add}")
 → Only after Stage 10 succeeds (PR created)
 ```
 
 ## OODA Checkpoint
 
 ```
-ai_architect_emit_ooda_checkpoint(stage="orchestrator", checks={
-  "blueprint_signoff_present": true/false,
-  "all_skill_versions_match": true/false,
-  "each_finding_has_one_agent": true/false,
-  "no_shared_stage_context": true/false,
-  "all_active_findings_have_worktree": true/false,
-  "context_budget_under_70_percent": true/false,
-  "retry_counts_under_max": true/false
-})
+ai_architect_emit_ooda_checkpoint(stage_id=0, phase="observe", decision="Blueprint signoff present: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=0, phase="observe", decision="All skill versions match: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=0, phase="observe", decision="Each finding has one agent: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=0, phase="observe", decision="No shared stage context: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=0, phase="observe", decision="All active findings have worktree: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=0, phase="observe", decision="Context budget under 70 percent: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=0, phase="decide", decision="All retry counts under max: {true/false}", confidence=1.0, session_id="{sessionID}")
 ```
 
 - [ ] Blueprint signoff present and approved?

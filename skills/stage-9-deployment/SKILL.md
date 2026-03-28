@@ -22,8 +22,8 @@ NOT FOR: code implementation — stage 6, verification rules — stage 7, benchm
 
 ## Before you start
 
-1. `ai_architect_load_context(stage="stage-8", finding_id="{findingID}")` — load benchmark report (confirms performance gates passed)
-2. `ai_architect_load_context(stage="stage-4", finding_id="{findingID}")` — load prd-tests.md for test suite definitions
+1. `ai_architect_load_context(stage_id=8, finding_id="{findingID}")` — load benchmark report (confirms performance gates passed)
+2. `ai_architect_load_context(stage_id=4, finding_id="{findingID}")` — load prd-tests.md for test suite definitions
 3. `ai_architect_load_session_state(session_id="{sessionID}")` — confirm currentStage = 9
 
 Missing Stage 8 benchmark report = BLOCK. Cannot run tests without verified benchmarks.
@@ -42,9 +42,9 @@ Missing Stage 8 benchmark report = BLOCK. Cannot run tests without verified benc
 
 ```
 ai_architect_run_tests(
-  project_path="{project_root}",
-  test_filter="*",
-  timeout=600
+  scheme="{scheme_name}",
+  test_plan="{test_plan_name}",
+  project_path="{project_root}"
 )
 → Runs all @Test @Suite tests defined in prd-tests.md
 → Captures: pass/fail per test, coverage percentage, failure details
@@ -60,9 +60,8 @@ Test categories from prd-tests.md:
 
 ```
 ai_architect_run_tests(
-  project_path="mcp/",
-  test_filter="*",
-  timeout=300
+  scheme="mcp-tests",
+  project_path="mcp/"
 )
 → pytest on MCP server tests
 → Captures pass/fail and coverage
@@ -93,19 +92,19 @@ Coverage summary:
 
 ```
 ai_architect_save_context(
-  stage="stage-9",
+  stage_id=9,
   finding_id="{findingID}",
-  data={
-    "findingID": "{findingID}",
-    "testResults": [...],
-    "totalTests": N,
+  artifact={
+    "finding_id": "{findingID}",
+    "test_results": [...],
+    "total_tests": N,
     "passed": M,
     "failed": F,
     "coverage": {
       "line": 0.0-1.0,
       "branch": 0.0-1.0
     },
-    "allTestsPass": true/false,
+    "all_tests_pass": true/false,
     "timestamp": "{ISO8601}"
   }
 )
@@ -119,34 +118,33 @@ ai_architect_fs_write(
 ### 5. Update pipeline state and audit
 
 ```
-ai_architect_save_session_state(session_id="{sessionID}", state={
-  "currentStage": 10,
-  "activeFindingID": "{findingID}",
-  "retryCount": 0
+ai_architect_save_session_state(state_data={
+  "session_id": "{sessionID}",
+  "finding_id": "{findingID}",
+  "current_stage": 10,
+  "status": "running",
+  "completed_stages": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 })
 
-ai_architect_append_audit_event(event={
-  "type": "stage_complete",
-  "stage": 9,
+ai_architect_append_audit_event(event_data={
+  "event_id": "stage-9-deployment-{findingID}",
+  "session_id": "{sessionID}",
+  "stage_id": 9,
+  "tool_name": "stage-9-deployment",
   "outcome": "pass",
-  "findingID": "{findingID}",
-  "totalTests": N,
-  "passed": M,
-  "failed": F,
-  "coverage": {...}
+  "message": "Stage 9 test suite completed for finding {findingID}: {passed}/{total} tests passed",
+  "metadata": {"total_tests": "{N}", "passed": "{M}", "failed": "{F}"}
 })
 ```
 
 ## OODA Checkpoint
 
 ```
-ai_architect_emit_ooda_checkpoint(stage="stage-9", checks={
-  "all_tests_executed": true/false,
-  "zero_failures": true/false,
-  "coverage_captured": true/false,
-  "test_report_written": true/false,
-  "stage_8_output_untouched": true/false
-})
+ai_architect_emit_ooda_checkpoint(stage_id=9, phase="observe", decision="All tests executed: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=9, phase="observe", decision="Zero failures: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=9, phase="observe", decision="Coverage captured: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=9, phase="observe", decision="Test report written: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=9, phase="decide", decision="Stage 8 output untouched: {true/false}", confidence=1.0, session_id="{sessionID}")
 ```
 
 - [ ] All tests executed?

@@ -28,11 +28,11 @@ NOT FOR: plan interview, PRD generation, impact analysis — stage 2, implementa
 2. `ai_architect_load_context(stage_id=1, finding_id="{findingID}")` — load Stage 1 findings
 3. `ai_architect_load_context(stage_id=2, finding_id="{findingID}")` — load Stage 2 impact map (propagation paths, affected engines)
 4. `ai_architect_load_session_state(session_id="{sessionID}")` — confirm currentStage = 3
-5. `ai_architect_list_experience_patterns(category="decision")` — load architecture decisions for context
+5. `ai_architect_list_experience_patterns(stage_id=3, min_relevance=0.1)` — load architecture decisions for context
 
 **If `codebase_intelligence: "ai_codebase_intelligence"` in Stage 0 health report:**
-6. `ai_architect_codebase_cypher(query="MATCH (a)-[:CodeRelation {type: 'IMPLEMENTS'}]->(b) WHERE b.name IN {affected_ports} RETURN a.name, a.filePath", repo_path="{target_repo}")` — find existing adapter implementations
-7. `ai_architect_codebase_context(name="{affected_port}", include_source=true, repo_path="{target_repo}")` — for each affected port from impact map
+6. `ai_architect_codebase_cypher(query="MATCH (a)-[:CodeRelation {type: 'IMPLEMENTS'}]->(b) WHERE b.name IN {affected_ports} RETURN a.name, a.filePath", repo="{target_repo}")` — find existing adapter implementations
+7. `ai_architect_codebase_context(name="{affected_port}", include_content=true, repo="{target_repo}")` — for each affected port from impact map
 
 Missing Stage 2 impact map = BLOCK. Cannot design integration without knowing blast radius.
 
@@ -52,15 +52,15 @@ If codebase intelligence engine is available (from Stage 0 health report):
 ```
 ai_architect_codebase_context(
   name="{affected_engines}",
-  include_source=true,
-  repo_path="{target_repo}"
+  include_content=true,
+  repo="{target_repo}"
 )
 → Resolve dependency graph for affected symbols
 
 ai_architect_codebase_context(
   name="{port_name}",
-  include_source=true,
-  repo_path="{target_repo}"
+  include_content=true,
+  repo="{target_repo}"
 )
 → Full context for each affected interface/protocol
 ```
@@ -83,8 +83,8 @@ For each interface file:
 ```
 ai_architect_enhance_prompt(
   prompt="Design integration blueprint for finding '{findingID}': affected engines={affectedEngines}, affected ports={affected_ports}",
-  strategy="verifiedReasoning",
-  context="{port_definitions + impact_map + codebase_structure}"
+  context="{port_definitions + impact_map + codebase_structure}",
+  max_iterations=3
 )
 → Returns per-engine:
   - Which adapter files need modification
@@ -97,11 +97,17 @@ ai_architect_enhance_prompt(
 
 ```
 ai_architect_verify_graph(
-  claims=["{dependency_1}", "{dependency_2}", ...],
-  graph_type="dependency"
+  graph_data={
+    "nodes": [
+      {"node_id": "{uuid}", "claim_id": "{uuid}", "label": "{package_name}", "node_type": "implementation"}
+    ],
+    "edges": [
+      {"source_id": "{uuid}", "target_id": "{uuid}", "relationship": "depends", "weight": 1.0}
+    ]
+  }
 )
-→ Verify: no circular package dependencies introduced
-→ Verify: adapter context decided (Xcode vs LocalFS vs mixed)
+→ Verify: no cycles detected (circular package dependencies)
+→ Verify: no contradictions in dependency graph
 ```
 
 ### 4. Map composition root wiring
@@ -112,24 +118,24 @@ Identify factory files requiring update. No new package-level dependencies unles
 
 ```
 ai_architect_save_context(
-  stage="stage-3",
+  stage_id=3,
   finding_id="{findingID}",
-  data={
-    "findingID": "{findingID}",
-    "affectedPorts": [...],
-    "adapterChanges": [
+  artifact={
+    "finding_id": "{findingID}",
+    "affected_ports": [...],
+    "adapter_changes": [
       {
         "engine": "{engine_name}",
         "port": "{port_protocol}",
-        "adapterFile": "{file_path}",
-        "changeType": "modify|create",
-        "newMethods": [...]
+        "adapter_file": "{file_path}",
+        "change_type": "modify|create",
+        "new_methods": [...]
       }
     ],
-    "compositionRootChanges": [...],
-    "fileChangeManifest": [...],
-    "adapterContext": "xcode|localfs|mixed",
-    "noCircularDeps": true,
+    "composition_root_changes": [...],
+    "file_change_manifest": [...],
+    "adapter_context": "xcode|localfs|mixed",
+    "no_circular_deps": true,
     "timestamp": "{ISO8601}"
   }
 )
@@ -143,33 +149,34 @@ ai_architect_fs_write(
 ### 6. Update pipeline state and audit
 
 ```
-ai_architect_save_session_state(session_id="{sessionID}", state={
-  "currentStage": 4,
-  "activeFindingID": "{findingID}",
-  "retryCount": 0
+ai_architect_save_session_state(state_data={
+  "session_id": "{sessionID}",
+  "finding_id": "{findingID}",
+  "current_stage": 4,
+  "status": "running",
+  "completed_stages": [0, 1, 2, 3]
 })
 
-ai_architect_append_audit_event(event={
-  "type": "stage_complete",
-  "stage": 3,
+ai_architect_append_audit_event(event_data={
+  "event_id": "stage-3-complete-{findingID}",
+  "session_id": "{sessionID}",
+  "stage_id": 3,
+  "tool_name": "stage-3-integration",
   "outcome": "pass",
-  "findingID": "{findingID}",
-  "affected_ports_count": N,
-  "adapter_changes_count": M
+  "message": "Stage 3 integration design completed for finding {findingID}",
+  "metadata": {"affected_ports_count": "{N}", "adapter_changes_count": "{M}"}
 })
 ```
 
 ## OODA Checkpoint
 
 ```
-ai_architect_emit_ooda_checkpoint(stage="stage-3", checks={
-  "all_affected_ports_identified": true/false,
-  "no_circular_package_dependencies": true/false,
-  "adapter_context_decided": true/false,
-  "file_change_manifest_complete": true/false,
-  "integration_design_readonly_from_here": true/false,
-  "stage_2_output_untouched": true/false
-})
+ai_architect_emit_ooda_checkpoint(stage_id=3, phase="observe", decision="All affected ports identified: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=3, phase="observe", decision="No circular package dependencies: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=3, phase="observe", decision="Adapter context decided: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=3, phase="observe", decision="File change manifest complete: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=3, phase="decide", decision="Integration design marked read-only: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=3, phase="decide", decision="Stage 2 output untouched: {true/false}", confidence=1.0, session_id="{sessionID}")
 ```
 
 - [ ] All affected ports identified?

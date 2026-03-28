@@ -22,7 +22,7 @@ NOT FOR: code implementation — stage 6, verification — stage 7, benchmarking
 
 ## Before you start
 
-1. `ai_architect_load_context(stage="stage-9", finding_id="{findingID}")` — load test report (confirms all tests passed)
+1. `ai_architect_load_context(stage_id=9, finding_id="{findingID}")` — load test report (confirms all tests passed)
 2. `ai_architect_load_session_state(session_id="{sessionID}")` — confirm currentStage = 10
 3. Load all stage artifacts for PR body assembly
 
@@ -44,8 +44,7 @@ Missing Stage 9 test report = BLOCK. Cannot create PR without passing tests.
 
 ```
 ai_architect_git_push(
-  branch="pipeline/{findingID}",
-  remote="origin"
+  branch="pipeline/{findingID}"
 )
 → Push implementation branch to GitHub
 → Failure = BLOCK — network issue, auth expired, or branch conflict
@@ -59,9 +58,8 @@ Assemble PR body from stage artifacts:
 ai_architect_github_create_pr(
   title="[{findingID}] {finding_summary}",
   body={assembled_pr_body},
-  base="main",
   head="pipeline/{findingID}",
-  labels=["ai-architect", "pipeline-generated"]
+  base="main"
 )
 
 PR body template:
@@ -91,16 +89,14 @@ PR body template:
 ### 3. Write final audit event
 
 ```
-ai_architect_append_audit_event(event={
-  "type": "pipeline_complete",
-  "stage": 10,
-  "outcome": "delivered",
-  "findingID": "{findingID}",
-  "prURL": "{pr_url}",
-  "totalStages": 11,
-  "totalRetries": {sum_of_all_retries},
-  "compoundScores": {per_stage_scores},
-  "timestamp": "{ISO8601}"
+ai_architect_append_audit_event(event_data={
+  "event_id": "stage-10-pr-{findingID}",
+  "session_id": "{sessionID}",
+  "stage_id": 10,
+  "tool_name": "stage-10-pr",
+  "outcome": "pass",
+  "message": "Stage 10 PR created for finding {findingID}: {pr_url}",
+  "metadata": {"pr_url": "{pr_url}", "total_retries": "{sum_of_all_retries}"}
 })
 ```
 
@@ -132,28 +128,33 @@ The stop hook reads AuditEvents and distils ExperiencePatterns:
 
 ```
 ai_architect_save_experience_pattern(
-  content="{lesson_learned}",
-  category="solution|pattern|decision|workaround|gotcha",
-  half_life_days={200|300}
+  pattern_data={
+    "pattern_id": "{uuid}",
+    "pattern_type": "success|failure|optimization|regression|anomaly",
+    "description": "{lesson_learned}",
+    "stage_id": 10,
+    "initial_relevance": 1.0,
+    "half_life_days": 200,
+    "tags": ["{findingID}", "pipeline-complete"]
+  }
 )
-→ Pattern types: solution (200d), pattern (300d), decision (300d), workaround (200d), gotcha (200d)
-→ Quality signals from compoundScore + retryCount inform pattern value
+→ Pattern types: success, failure, optimization, regression, anomaly
+→ Quality signals from compoundScore + retryCount inform pattern_type and initial_relevance
 ```
 
 ### 6. Write PR manifest
 
 ```
 ai_architect_save_context(
-  stage="stage-10",
+  stage_id=10,
   finding_id="{findingID}",
-  data={
-    "findingID": "{findingID}",
-    "prURL": "{pr_url}",
+  artifact={
+    "finding_id": "{findingID}",
+    "pr_url": "{pr_url}",
     "branch": "pipeline/{findingID}",
-    "labels": ["ai-architect", "pipeline-generated"],
-    "sha256Manifest": "{manifest_path}",
-    "auditTrailClosed": true,
-    "experiencePatternsWritten": true,
+    "sha256_manifest": "{manifest_path}",
+    "audit_trail_closed": true,
+    "experience_patterns_written": true,
     "timestamp": "{ISO8601}"
   }
 )
@@ -167,26 +168,25 @@ ai_architect_fs_write(
 ### 7. Update pipeline state (final)
 
 ```
-ai_architect_save_session_state(session_id="{sessionID}", state={
-  "currentStage": "complete",
-  "activeFindingID": "{findingID}",
-  "status": "delivered",
-  "prURL": "{pr_url}"
+ai_architect_save_session_state(state_data={
+  "session_id": "{sessionID}",
+  "finding_id": "{findingID}",
+  "current_stage": 10,
+  "status": "completed",
+  "completed_stages": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+  "metadata": {"pr_url": "{pr_url}"}
 })
 ```
 
 ## OODA Checkpoint
 
 ```
-ai_architect_emit_ooda_checkpoint(stage="stage-10", checks={
-  "branch_pushed": true/false,
-  "pr_open_on_github": true/false,
-  "correct_labels_applied": true/false,
-  "sha256_manifest_written": true/false,
-  "audit_event_closed": true/false,
-  "experience_patterns_written": true/false,
-  "stage_9_output_untouched": true/false
-})
+ai_architect_emit_ooda_checkpoint(stage_id=10, phase="observe", decision="Branch pushed to remote: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=10, phase="observe", decision="PR open on GitHub: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=10, phase="observe", decision="sha256 manifest written: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=10, phase="observe", decision="Audit event closed: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=10, phase="observe", decision="Experience patterns written: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=10, phase="decide", decision="Stage 9 output untouched: {true/false}", confidence=1.0, session_id="{sessionID}")
 ```
 
 - [ ] Branch pushed to remote?

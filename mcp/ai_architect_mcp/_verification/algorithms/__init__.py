@@ -7,7 +7,7 @@ Implemented:
   4. NLI Entailment Evaluator (ALG-005)
   5. Weighted Average Consensus
 
-Enum stubs only (not implemented):
+Enum stubs only (not implemented algorithms):
   - Bayesian Consensus
   - Majority Voting
 """

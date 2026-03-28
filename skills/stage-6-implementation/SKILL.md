@@ -22,11 +22,11 @@ NOT FOR: verify — stage 7, PRD review — stage 5, anything pre-implementation
 
 ## Before you start
 
-1. `ai_architect_load_context(stage="stage-5", finding_id="{findingID}")` — load verification report (confirms PRD passed review)
-2. `ai_architect_load_context(stage="stage-4", finding_id="{findingID}")` — load PRD files (prd-technical.md for file manifest, prd-tests.md for test specs)
-3. `ai_architect_load_context(stage="stage-3", finding_id="{findingID}")` — load integration design (composition root wiring)
+1. `ai_architect_load_context(stage_id=5, finding_id="{findingID}")` — load verification report (confirms PRD passed review)
+2. `ai_architect_load_context(stage_id=4, finding_id="{findingID}")` — load PRD files (prd-technical.md for file manifest, prd-tests.md for test specs)
+3. `ai_architect_load_context(stage_id=3, finding_id="{findingID}")` — load integration design (composition root wiring)
 4. `ai_architect_load_session_state(session_id="{sessionID}")` — confirm currentStage = 6, check retryCount
-5. `ai_architect_list_experience_patterns(category="solution")` — load solution patterns for implementation context
+5. `ai_architect_list_experience_patterns(stage_id=6, min_relevance=0.1)` — load solution patterns for implementation context
 
 Missing Stage 5 verification report = BLOCK. Cannot implement without reviewed PRD.
 
@@ -66,8 +66,8 @@ Parse `prd-technical.md` file change manifest. Order by dependency:
 ```
 ai_architect_enhance_prompt(
   prompt="Decompose file change manifest from prd-technical.md into ordered implementation tasks",
-  strategy="planAndSolve",
-  context="{prd_technical + integration_design}"
+  context="{prd_technical + integration_design}",
+  max_iterations=3
 )
 → Returns ordered list of files to create/modify with dependency ordering
 ```
@@ -84,15 +84,16 @@ For each file in dependency order:
 
   # Select strategy for this file type
   ai_architect_select_strategy(
-    task_type="implementation",
-    context="implement {file_path} for {AC_refs}"
+    project_type="implementation",
+    complexity="high",
+    characteristics=["code_generation", "port_adapter_pattern", "test_coverage"]
   )
 
   # Generate implementation with full context
   ai_architect_enhance_prompt(
-    prompt="Implement {file_path} according to PRD spec",
-    strategy="{selected_strategy}",
-    context="{existing_file + relevant_ACs + experience_patterns + port_definitions}"
+    prompt="Implement {file_path} according to PRD spec for {AC_refs}",
+    context="{existing_file + relevant_ACs + experience_patterns + port_definitions}",
+    max_iterations=3
   )
 
   # Write the file
@@ -115,7 +116,7 @@ If codebase intelligence engine is available, verify multi-file changes before c
 ai_architect_codebase_impact(
   target="{modified_function}",
   direction="downstream",
-  repo_path="{target_repo}"
+  repo="{target_repo}"
 )
 → Traces call chains from modified code to callers
 → Ensures no unexpected downstream breakage
@@ -128,16 +129,22 @@ After all workers complete:
 ```
 # Verify no import cycles
 ai_architect_verify_graph(
-  claims=["{all_import_statements}"],
-  graph_type="dependency"
+  graph_data={
+    "nodes": [
+      {"node_id": "{uuid}", "claim_id": "{uuid}", "label": "{module_name}", "node_type": "implementation"}
+    ],
+    "edges": [
+      {"source_id": "{importer_uuid}", "target_id": "{imported_uuid}", "relationship": "depends", "weight": 1.0}
+    ]
+  }
 )
-→ No circular imports allowed
+→ No cycles detected = no circular imports
 
 # Verify all protocol conformances present
 ai_architect_enhance_prompt(
   prompt="Verify all protocol conformances from integration design are implemented",
-  strategy="verifiedReasoning",
-  context="{integration_design + implemented_files}"
+  context="{integration_design + implemented_files}",
+  max_iterations=2
 )
 
 # Verify composition root wiring complete
@@ -149,21 +156,21 @@ ai_architect_fs_read(path="{composition_root_file}")
 
 ```
 ai_architect_save_context(
-  stage="stage-6",
+  stage_id=6,
   finding_id="{findingID}",
-  data={
-    "findingID": "{findingID}",
+  artifact={
+    "finding_id": "{findingID}",
     "branch": "pipeline/{findingID}",
-    "filesChanged": [
+    "files_changed": [
       {
         "path": "{file_path}",
-        "changeType": "create|modify",
-        "acRefs": ["AC-001", ...],
-        "commitSha": "{sha}"
+        "change_type": "create|modify",
+        "ac_refs": ["AC-001", ...],
+        "commit_sha": "{sha}"
       }
     ],
-    "totalFiles": N,
-    "totalCommits": M,
+    "total_files": N,
+    "total_commits": M,
     "timestamp": "{ISO8601}"
   }
 )
@@ -177,34 +184,34 @@ ai_architect_fs_write(
 ### 7. Update pipeline state and audit
 
 ```
-ai_architect_save_session_state(session_id="{sessionID}", state={
-  "currentStage": 7,
-  "activeFindingID": "{findingID}",
-  "retryCount": 0
+ai_architect_save_session_state(state_data={
+  "session_id": "{sessionID}",
+  "finding_id": "{findingID}",
+  "current_stage": 7,
+  "status": "running",
+  "completed_stages": [0, 1, 2, 3, 4, 5, 6]
 })
 
-ai_architect_append_audit_event(event={
-  "type": "stage_complete",
-  "stage": 6,
+ai_architect_append_audit_event(event_data={
+  "event_id": "stage-6-complete-{findingID}",
+  "session_id": "{sessionID}",
+  "stage_id": 6,
+  "tool_name": "stage-6-implementation",
   "outcome": "pass",
-  "findingID": "{findingID}",
-  "files_changed": N,
-  "commits": M,
-  "branch": "pipeline/{findingID}"
+  "message": "Stage 6 implementation completed for finding {findingID}",
+  "metadata": {"files_changed": "{N}", "commits": "{M}", "branch": "pipeline/{findingID}"}
 })
 ```
 
 ## OODA Checkpoint
 
 ```
-ai_architect_emit_ooda_checkpoint(stage="stage-6", checks={
-  "all_manifest_files_implemented": true/false,
-  "no_circular_package_dependencies": true/false,
-  "all_protocol_conformances_complete": true/false,
-  "composition_root_wired": true/false,
-  "all_commits_on_correct_branch": true/false,
-  "stage_5_output_untouched": true/false
-})
+ai_architect_emit_ooda_checkpoint(stage_id=6, phase="observe", decision="All manifest files implemented: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=6, phase="observe", decision="No circular package dependencies: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=6, phase="observe", decision="All protocol conformances complete: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=6, phase="observe", decision="Composition root wired: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=6, phase="observe", decision="All commits on correct branch: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=6, phase="decide", decision="Stage 5 output untouched: {true/false}", confidence=1.0, session_id="{sessionID}")
 ```
 
 - [ ] All files in manifest implemented?

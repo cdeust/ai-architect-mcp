@@ -73,6 +73,10 @@ class PromptingSection(BaseModel):
         le=100,
         description="Maximum thoughts retained in the signal-aware buffer",
     )
+    llm_model: str = Field(
+        default="claude-sonnet-4-20250514",
+        description="Model ID for LLM-backed prompting and verification algorithms",
+    )
 
 
 class ContextSection(BaseModel):

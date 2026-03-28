@@ -27,11 +27,11 @@ NOT FOR: design integration, generate PRD, discovery — that was stage 1
 1. `ai_architect_load_context(stage_id=0, finding_id="{findingID}")` — load Stage 0 health report (check `codebase_intelligence` field for codebase intelligence engine availability)
 2. `ai_architect_load_context(stage_id=1, finding_id="{findingID}")` — load Stage 1 findings (finding details, relevance scores, codebase matches)
 3. `ai_architect_load_session_state(session_id="{sessionID}")` — confirm currentStage = 2
-4. `ai_architect_list_experience_patterns(category="pattern")` — load architecture patterns for impact context
+4. `ai_architect_list_experience_patterns(stage_id=2, min_relevance=0.1)` — load architecture patterns for impact context
 
 **If `codebase_intelligence: "ai_codebase_intelligence"` in Stage 0 health report:**
-5. `ai_architect_codebase_impact(target="{primary_symbol}", direction="upstream", repo_path="{target_repo}")` — blast radius analysis
-6. `ai_architect_codebase_context(name="{primary_symbol}", include_source=true, repo_path="{target_repo}")` — full symbol context with callers
+5. `ai_architect_codebase_impact(target="{primary_symbol}", direction="upstream", repo="{target_repo}")` — blast radius analysis
+6. `ai_architect_codebase_context(name="{primary_symbol}", include_content=true, repo="{target_repo}")` — full symbol context with callers
 
 Missing Stage 1 findings = BLOCK. Cannot analyze impact without findings.
 
@@ -61,7 +61,7 @@ If codebase intelligence engine is available (from Stage 0 health report):
 ai_architect_codebase_impact(
   target="{affected_files}",
   direction="downstream",
-  repo_path="{target_repo}"
+  repo="{target_repo}"
 )
 → Precise impact analysis: which files, modules, and tests are affected
 → More accurate than filesystem scanning for large codebases
@@ -73,9 +73,9 @@ Multiple perspectives analyze the finding's impact:
 
 ```
 ai_architect_expand_thought(
-  thought="Analyze impact of finding '{findingID}' on codebase",
-  strategy="collaborative_inference",
-  perspectives=["performance", "security", "maintainability", "scope"]
+  prompt="Analyze impact of finding '{findingID}' on codebase from four perspectives: performance, security, maintainability, and scope. Score each 0.0–1.0.",
+  context="{finding_details + codebase_structure}",
+  max_depth=4
 )
 → Returns multi-perspective impact analysis
 → Each perspective scores 0.0–1.0
@@ -85,14 +85,15 @@ ai_architect_expand_thought(
 
 ```
 ai_architect_select_strategy(
-  task_type="impact_analysis",
-  context="trace dependency graph for cascade points"
+  project_type="impact_analysis",
+  complexity="high",
+  characteristics=["dependency_tracing", "cascade_detection", "propagation_mapping"]
 )
 
 ai_architect_enhance_prompt(
   prompt="Decompose finding '{findingID}' into affected packages, trace dependency graph, identify cascade points",
-  strategy="planAndSolve",
-  context="{codebase_structure + finding_details}"
+  context="{codebase_structure + finding_details}",
+  max_iterations=3
 )
 → Returns: affected packages, dependency chains, cascade points
 ```
@@ -101,23 +102,15 @@ ai_architect_enhance_prompt(
 
 ```
 ai_architect_compound_score(
-  scores={
-    "relevance": {from_stage_1},
-    "performance_impact": {from_step_2},
-    "security_impact": {from_step_2},
-    "maintainability_impact": {from_step_2},
-    "scope_impact": {from_step_2},
-    "propagation_depth": {number_of_cascade_levels},
-    "affected_package_count": N
-  },
+  relevance={from_stage_1},
+  uniqueness={novelty_vs_existing_findings},
+  impact={average_of_perspective_scores},
+  confidence={propagation_coverage_ratio},
   weights={
-    "relevance": 0.2,
-    "performance_impact": 0.15,
-    "security_impact": 0.2,
-    "maintainability_impact": 0.15,
-    "scope_impact": 0.15,
-    "propagation_depth": 0.1,
-    "affected_package_count": 0.05
+    "relevance": 0.25,
+    "uniqueness": 0.15,
+    "impact": 0.40,
+    "confidence": 0.20
   }
 )
 → Returns compound impact score 0.0–1.0
@@ -127,11 +120,15 @@ ai_architect_compound_score(
 
 ```
 ai_architect_trace_propagation(
-  finding_id="{findingID}",
-  entry_points=["{affected_port_1}", "{affected_port_2}"],
-  depth=3
+  source_module="{affected_module}",
+  dependency_graph={
+    "{module_A}": ["{module_B}", "{module_C}"],
+    "{module_B}": ["{module_D}"],
+    "{module_C}": ["{module_D}", "{module_E}"]
+  },
+  max_depth=3
 )
-→ Returns propagation tree: which adapters, engines, and modules are affected
+→ Returns propagation paths and impact score
 → Identifies cascade points where a single change triggers multiple downstream updates
 ```
 
@@ -139,16 +136,16 @@ ai_architect_trace_propagation(
 
 ```
 ai_architect_save_context(
-  stage="stage-2",
+  stage_id=2,
   finding_id="{findingID}",
-  data={
-    "findingID": "{findingID}",
-    "compoundImpactScore": 0.0-1.0,
-    "propagationPaths": [...],
-    "affectedEngines": [...],
-    "affectedPackages": [...],
-    "cascadePoints": [...],
-    "perspectiveScores": {
+  artifact={
+    "finding_id": "{findingID}",
+    "compound_impact_score": 0.0-1.0,
+    "propagation_paths": [...],
+    "affected_engines": [...],
+    "affected_packages": [...],
+    "cascade_points": [...],
+    "perspective_scores": {
       "performance": 0.0-1.0,
       "security": 0.0-1.0,
       "maintainability": 0.0-1.0,
@@ -167,31 +164,33 @@ ai_architect_fs_write(
 ### 7. Update pipeline state and audit
 
 ```
-ai_architect_save_session_state(session_id="{sessionID}", state={
-  "currentStage": 3,
-  "activeFindingID": "{findingID}",
-  "retryCount": 0
+ai_architect_save_session_state(state_data={
+  "session_id": "{sessionID}",
+  "finding_id": "{findingID}",
+  "current_stage": 3,
+  "status": "running",
+  "completed_stages": [0, 1, 2]
 })
 
-ai_architect_append_audit_event(event={
-  "type": "stage_complete",
-  "stage": 2,
+ai_architect_append_audit_event(event_data={
+  "event_id": "stage-2-complete-{findingID}",
+  "session_id": "{sessionID}",
+  "stage_id": 2,
+  "tool_name": "stage-2-impact",
   "outcome": "pass",
-  "findingID": "{findingID}",
-  "compoundImpactScore": {score}
+  "message": "Stage 2 impact analysis completed for finding {findingID}",
+  "metadata": {"compound_impact_score": "{score}"}
 })
 ```
 
 ## OODA Checkpoint
 
 ```
-ai_architect_emit_ooda_checkpoint(stage="stage-2", checks={
-  "compound_impact_score_computed": true/false,
-  "propagation_paths_non_empty": true/false,
-  "affected_engines_listed": true/false,
-  "impact_map_written_to_stage_context": true/false,
-  "stage_1_output_untouched": true/false
-})
+ai_architect_emit_ooda_checkpoint(stage_id=2, phase="observe", decision="Compound impact score computed: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=2, phase="observe", decision="Propagation paths non-empty: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=2, phase="observe", decision="Affected engines listed: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=2, phase="observe", decision="Impact map written to StageContext: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=2, phase="decide", decision="Stage 1 output untouched: {true/false}", confidence=1.0, session_id="{sessionID}")
 ```
 
 - [ ] Compound impact score computed (0.0–1.0)?

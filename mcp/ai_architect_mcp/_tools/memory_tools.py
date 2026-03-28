@@ -197,7 +197,16 @@ async def ai_architect_append_audit_event(
     """Append an immutable audit event.
 
     Args:
-        event_data: Audit event fields as a dictionary.
+        event_data: Audit event fields as a dictionary. Required fields:
+            - event_id (str): Unique identifier for this event.
+            - session_id (str): Session that produced this event.
+            - stage_id (int): Pipeline stage number (0-10).
+            - tool_name (str): Tool or gate that was invoked.
+            - outcome (str): Result — one of "pass", "fail", "skip", "error".
+            - message (str): Human-readable event description.
+            Optional fields:
+            - timestamp (str): ISO 8601 UTC timestamp (default: now).
+            - metadata (dict[str, str]): Additional context key-value pairs.
 
     Returns:
         Confirmation with event_id.
@@ -223,7 +232,12 @@ async def ai_architect_query_audit_events(
     """Query audit events with filters.
 
     Args:
-        query_data: AuditQuery fields as a dictionary.
+        query_data: AuditQuery filter fields as a dictionary. All optional:
+            - session_id (str | None): Filter by session.
+            - stage_id (int | None): Filter by pipeline stage (0-10).
+            - outcome (str | None): Filter by outcome — "pass", "fail", "skip", "error".
+            - since (str | None): ISO 8601 timestamp — only events after this time.
+            - limit (int): Max events to return (1-1000, default 100).
 
     Returns:
         Matching audit events as dictionaries.

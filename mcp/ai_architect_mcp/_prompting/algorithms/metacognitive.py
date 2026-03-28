@@ -9,6 +9,8 @@ from enum import Enum
 
 from ai_architect_mcp._models.prompting import EnhancedPrompt
 
+DEFAULT_MODEL = "claude-sonnet-4-20250514"
+
 
 class Intervention(str, Enum):
     """Types of metacognitive interventions."""
@@ -30,8 +32,14 @@ FALLBACK_STRATEGIES = [
 class MetacognitiveMonitor:
     """Metacognitive monitor for self-aware reasoning."""
 
-    def __init__(self, client: object | None = None) -> None:
+    def __init__(self, client: object, model: str = DEFAULT_MODEL) -> None:
+        if client is None:
+            raise ValueError(
+                "MetacognitiveMonitor requires an LLM client. "
+                "Provide a Claude CLI client or AsyncAnthropic instance."
+            )
         self._client = client
+        self._model = model
         self._current_strategy_idx = 0
 
     async def monitor(
@@ -106,7 +114,7 @@ class MetacognitiveMonitor:
         return Intervention.CONTINUE
 
     async def _assess_confidence(self, response: str, context: str) -> float:
-        """Assess confidence in a response.
+        """Assess confidence in a response using LLM.
 
         Args:
             response: The response to assess.
@@ -115,12 +123,33 @@ class MetacognitiveMonitor:
         Returns:
             Confidence score between 0.0 and 1.0.
         """
-        if self._client is None:
+        try:
+            result = await self._client.messages.create(
+                model=self._model,
+                max_tokens=50,
+                temperature=0.1,
+                system=(
+                    "Rate the quality and completeness of this response "
+                    "on a scale of 0.0 to 1.0. Respond with only a number."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"Response:\n{response[:2000]}\n\n"
+                        f"Context:\n{context[:1000]}"
+                    ),
+                }],
+            )
+            text = result.content[0].text.strip()
+            score = float(text.split()[0].strip(".,;:"))
+            return max(0.0, min(1.0, score))
+        except (AttributeError, IndexError, TypeError, ValueError):
             return 0.7
-        return 0.7
+        except Exception:
+            return 0.7
 
     async def _reflect(self, prompt: str, response: str, context: str) -> str:
-        """Trigger a reflection intervention.
+        """Trigger a reflection intervention using LLM.
 
         Args:
             prompt: The original prompt.
@@ -130,14 +159,35 @@ class MetacognitiveMonitor:
         Returns:
             Reflected response.
         """
-        if self._client is None:
-            return f"{response}\n[Reflection: reconsidering assumptions]"
-        return response
+        try:
+            result = await self._client.messages.create(
+                model=self._model,
+                max_tokens=4096,
+                temperature=0.7,
+                system=(
+                    "You are a metacognitive reviewer. The response below may have "
+                    "issues. Reflect on its assumptions, identify gaps, and produce "
+                    "an improved version."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"Original task: {prompt}\n\n"
+                        f"Current response:\n{response}\n\n"
+                        f"Context:\n{context}"
+                    ),
+                }],
+            )
+            return result.content[0].text.strip()
+        except (AttributeError, IndexError, TypeError):
+            return response
+        except Exception:
+            return response
 
     async def _switch_strategy(
         self, prompt: str, response: str, context: str
     ) -> str:
-        """Switch to a fallback strategy.
+        """Switch to a fallback strategy using LLM.
 
         Args:
             prompt: The original prompt.
@@ -151,6 +201,28 @@ class MetacognitiveMonitor:
             (self._current_strategy_idx + 1) % len(FALLBACK_STRATEGIES)
         )
         strategy = FALLBACK_STRATEGIES[self._current_strategy_idx]
-        if self._client is None:
-            return f"{response}\n[Strategy switch to: {strategy}]"
-        return response
+
+        try:
+            result = await self._client.messages.create(
+                model=self._model,
+                max_tokens=4096,
+                temperature=0.7,
+                system=(
+                    f"The current approach isn't working. Switch to a "
+                    f"'{strategy}' strategy. Re-approach the task from "
+                    f"this new angle and produce a better response."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"Task: {prompt}\n\n"
+                        f"Previous attempt:\n{response}\n\n"
+                        f"Context:\n{context}"
+                    ),
+                }],
+            )
+            return result.content[0].text.strip()
+        except (AttributeError, IndexError, TypeError):
+            return response
+        except Exception:
+            return response

@@ -8,6 +8,7 @@ from __future__ import annotations
 from ai_architect_mcp._models.prompting import EnhancedPrompt
 
 LEARNING_THRESHOLD = 0.8
+DEFAULT_MODEL = "claude-sonnet-4-20250514"
 
 
 class ThoughtTemplate:
@@ -30,8 +31,14 @@ class ThoughtTemplate:
 class SignalAwareThoughtBuffer:
     """Signal-aware thought buffer for template-based enhancement."""
 
-    def __init__(self, client: object | None = None) -> None:
+    def __init__(self, client: object, model: str = DEFAULT_MODEL) -> None:
+        if client is None:
+            raise ValueError(
+                "SignalAwareThoughtBuffer requires an LLM client. "
+                "Provide a Claude CLI client or AsyncAnthropic instance."
+            )
         self._client = client
+        self._model = model
         self._templates: list[ThoughtTemplate] = self._default_templates()
         self._learned: list[ThoughtTemplate] = []
 
@@ -123,9 +130,26 @@ class SignalAwareThoughtBuffer:
         Returns:
             Execution result.
         """
-        if self._client is None:
-            return f"Enhanced: {enhanced_context[:200]}"
-        return enhanced_context
+        try:
+            response = await self._client.messages.create(
+                model=self._model,
+                max_tokens=4096,
+                temperature=0.7,
+                system=(
+                    "You are an expert content generator. Execute the task "
+                    "described below, applying the provided patterns and context "
+                    "to produce thorough, well-structured output."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": enhanced_context,
+                }],
+            )
+            return response.content[0].text.strip()
+        except (AttributeError, IndexError, TypeError):
+            return enhanced_context
+        except Exception:
+            return enhanced_context
 
     async def _evaluate_confidence(self, result: str, context: str) -> float:
         """Evaluate confidence in the result.
@@ -137,9 +161,30 @@ class SignalAwareThoughtBuffer:
         Returns:
             Confidence score between 0.0 and 1.0.
         """
-        if self._client is None:
-            return 0.75
-        return 0.7
+        try:
+            response = await self._client.messages.create(
+                model=self._model,
+                max_tokens=50,
+                temperature=0.1,
+                system=(
+                    "Rate the quality of this result on a scale of 0.0 to 1.0. "
+                    "Respond with only a number."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"Result:\n{result[:2000]}\n\n"
+                        f"Context:\n{context[:1000]}"
+                    ),
+                }],
+            )
+            text = response.content[0].text.strip()
+            score = float(text.split()[0].strip(".,;:"))
+            return max(0.0, min(1.0, score))
+        except (AttributeError, IndexError, TypeError, ValueError):
+            return 0.7
+        except Exception:
+            return 0.7
 
     def _learn(self, prompt: str, result: str, confidence: float) -> None:
         """Learn a new template from a successful execution.

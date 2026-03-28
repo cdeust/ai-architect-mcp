@@ -22,8 +22,8 @@ NOT FOR: generate PRD — stage 4, implement — stage 6, health check — stage
 
 ## Before you start
 
-1. `ai_architect_load_context(stage="stage-4", finding_id="{findingID}")` — load PRD from Stage 4
-2. `ai_architect_load_context(stage="stage-4.5", finding_id="{findingID}")` — load interview results (advisory warnings if PROVISIONAL)
+1. `ai_architect_load_context(stage_id=4, finding_id="{findingID}")` — load PRD from Stage 4
+2. `ai_architect_load_context(stage_id=4, finding_id="{findingID}-interview")` — load interview results (advisory warnings if PROVISIONAL)
 3. `ai_architect_load_session_state(session_id="{sessionID}")` — confirm currentStage = 5, check retryCount
 
 Missing Stage 4 PRD = BLOCK. Missing Stage 4.5 interview result = BLOCK.
@@ -43,56 +43,66 @@ Missing Stage 4 PRD = BLOCK. Missing Stage 4.5 interview result = BLOCK.
 
 ```
 ai_architect_verify_claim(
-  claim="{prd_requirement_claims}",
-  evidence="{prd_content}",
-  method="chain_of_verification"
+  content="{prd_requirement_claim_text}",
+  claim_type="atomic_fact",
+  context="{prd_content}",
+  priority=80
 )
-→ Systematic verification of each requirement claim against evidence
-→ Returns per-claim verdicts: PASS, SPEC-COMPLETE, NEEDS-RUNTIME, INCONCLUSIVE, FAIL
+→ Chain of Verification: systematic verification of each requirement claim
+→ Returns per-claim evaluation with score and verdict
 ```
 
 ### 2. Run Zero-LLM Graph Verification (Algorithm 3)
 
 ```
 ai_architect_verify_graph(
-  claims=["{all_FR_IDs}", "{all_AC_IDs}", "{all_UT_IDs}", "{all_STORY_IDs}"],
-  graph_type="traceability"
+  graph_data={
+    "nodes": [
+      {"node_id": "{uuid}", "claim_id": "{uuid}", "label": "FR-001", "node_type": "requirement"},
+      {"node_id": "{uuid}", "claim_id": "{uuid}", "label": "AC-001", "node_type": "test"},
+      {"node_id": "{uuid}", "claim_id": "{uuid}", "label": "STORY-001", "node_type": "specification"}
+    ],
+    "edges": [
+      {"source_id": "{FR_uuid}", "target_id": "{AC_uuid}", "relationship": "tests", "weight": 1.0},
+      {"source_id": "{STORY_uuid}", "target_id": "{FR_uuid}", "relationship": "requires", "weight": 1.0}
+    ]
+  }
 )
 → Verify complete acyclic traceability graph
-→ Detect orphan IDs, circular references, missing links
-→ Binary pass/fail
+→ Detect orphan IDs, cycles, contradictions
+→ Binary pass/fail per structural check
 ```
 
 ### 3. Run NLI Entailment Evaluator (Algorithm 5)
 
 ```
 ai_architect_evaluate_nli(
-  premise="{requirements_text}",
-  hypothesis="{acceptance_criteria_text}",
-  threshold=0.85
+  claim_content="{acceptance_criterion_text}",
+  premise="{requirement_text}",
+  strict=true
 )
-→ Natural Language Inference: do acceptance criteria entail requirements?
-→ Score 0.0–1.0 per pair
+→ Natural Language Inference: does each AC entail its FR?
+→ Returns ClaimEvaluation with score 0.0–1.0 per pair
 ```
 
 ### 4. Run Claim Decomposition
 
 ```
 ai_architect_decompose_claim(
-  claim="{complex_prd_claims}",
-  depth=2
+  content="{complex_prd_claim_text}",
+  priority=80
 )
 → Break complex claims into atomic verifiable units
-→ Each sub-claim gets independent verification
+→ Each sub-claim gets independent verification via verify_claim
 ```
 
 ### 5. Run Multi-Agent Debate (Algorithm 6)
 
 ```
 ai_architect_debate_claim(
-  claim="{prd_controversial_claims}",
-  agents=["advocate", "critic", "judge"],
-  rounds=3
+  content="{prd_controversial_claim_text}",
+  num_agents=3,
+  max_rounds=3
 )
 → Tool-MAD, A-HMAD, FREE-MAD argue against PRD claims
 → Flag overclaiming (claims without NEEDS-RUNTIME markers)
@@ -103,34 +113,29 @@ ai_architect_debate_claim(
 
 ```
 ai_architect_consensus(
-  scores=[
-    {alg1_score},
-    {alg3_score},
-    {alg5_score},
-    {alg6_score}
-  ],
-  method="ks_adaptive",
-  early_stopping=true
+  scores=[{alg1_score}, {alg3_score}, {alg5_score}, {alg6_score}],
+  confidences=[{alg1_confidence}, {alg3_confidence}, {alg5_confidence}, {alg6_confidence}],
+  algorithm="adaptive_stability"
 )
-→ Beta-Binomial early stopping when evaluators converge
+→ KS Adaptive Stability: Beta-Binomial early stopping when evaluators converge
 → Saves 30-50% cost on clear pass/fail cases
-→ Returns consensus score 0.0–1.0
+→ Returns ConsensusResult with final score 0.0–1.0
 ```
 
 ### 7. Confidence fusion across all algorithms
 
 ```
 ai_architect_fuse_confidence(
-  sources=[
-    {"algorithm": "chain_of_verification", "score": {alg1}},
-    {"algorithm": "graph_verification", "score": {alg3}},
-    {"algorithm": "nli_entailment", "score": {alg5}},
-    {"algorithm": "multi_agent_debate", "score": {alg6}},
-    {"algorithm": "ks_consensus", "score": {alg7}}
+  estimates=[
+    {"source": "thought_buffer", "value": {alg1_score}, "uncertainty": 0.1, "reasoning": "Chain of Verification score"},
+    {"source": "adaptive_expansion", "value": {alg3_score}, "uncertainty": 0.05, "reasoning": "Graph Verification score"},
+    {"source": "collaborative_inference", "value": {alg5_score}, "uncertainty": 0.1, "reasoning": "NLI Entailment score"},
+    {"source": "metacognitive", "value": {alg6_score}, "uncertainty": 0.15, "reasoning": "Multi-Agent Debate score"},
+    {"source": "trm_refinement", "value": {alg7_score}, "uncertainty": 0.1, "reasoning": "KS Consensus score"}
   ]
 )
-→ Weighted fusion of all algorithm scores
-→ Final compound review score 0.0–1.0
+→ Weighted fusion of all algorithm confidence estimates
+→ Returns FusedConfidence with point estimate, lower/upper bounds
 ```
 
 ### 8. Decision: pass or loop
@@ -138,10 +143,10 @@ ai_architect_fuse_confidence(
 **If compound score ≥ threshold:**
 ```
 ai_architect_save_context(
-  stage="stage-5",
+  stage_id=5,
   finding_id="{findingID}",
-  data={
-    "algorithmScores": {
+  artifact={
+    "algorithm_scores": {
       "chain_of_verification": {score},
       "graph_verification": {score},
       "nli_entailment": {score},
@@ -150,9 +155,9 @@ ai_architect_save_context(
       "ks_consensus": {score},
       "confidence_fusion": {score}
     },
-    "compoundScore": {final_score},
+    "compound_score": {final_score},
     "overclaiming": [...],
-    "failedRules": [],
+    "failed_rules": [],
     "decision": "pass",
     "timestamp": "{ISO8601}"
   }
@@ -163,9 +168,12 @@ ai_architect_fs_write(
   content={verification report JSON}
 )
 
-ai_architect_save_session_state(session_id="{sessionID}", state={
-  "currentStage": 6,
-  "retryCount": 0
+ai_architect_save_session_state(state_data={
+  "session_id": "{sessionID}",
+  "finding_id": "{findingID}",
+  "current_stage": 6,
+  "status": "running",
+  "completed_stages": [0, 1, 2, 3, 4, 5]
 })
 ```
 
@@ -175,38 +183,39 @@ ai_architect_save_session_state(session_id="{sessionID}", state={
 → Loop back to Stage 4 step 5 (skip clarification, reuse ClarificationReport)
 → Max 3 retries of the Stage 5→4 loop
 
-ai_architect_save_session_state(session_id="{sessionID}", state={
-  "currentStage": 4,
-  "retryCount": {current + 1},
-  "retryReason": "review_score_below_threshold",
-  "failedAlgorithms": [...]
+ai_architect_save_session_state(state_data={
+  "session_id": "{sessionID}",
+  "finding_id": "{findingID}",
+  "current_stage": 4,
+  "status": "running",
+  "completed_stages": [0, 1, 2, 3],
+  "metadata": {"retry_count": "{current + 1}", "retry_reason": "review_score_below_threshold"}
 })
 ```
 
 ### 9. Audit event
 
 ```
-ai_architect_append_audit_event(event={
-  "type": "stage_complete",
-  "stage": 5,
-  "outcome": "pass|loop_to_4",
-  "findingID": "{findingID}",
-  "compoundScore": {score},
-  "retryCount": N
+ai_architect_append_audit_event(event_data={
+  "event_id": "stage-5-review-{findingID}",
+  "session_id": "{sessionID}",
+  "stage_id": 5,
+  "tool_name": "stage-5-review",
+  "outcome": "pass",
+  "message": "Stage 5 review completed for finding {findingID}: {decision}",
+  "metadata": {"compound_score": "{score}", "retry_count": "{N}"}
 })
 ```
 
 ## OODA Checkpoint
 
 ```
-ai_architect_emit_ooda_checkpoint(stage="stage-5", checks={
-  "all_7_algorithms_executed": true/false,
-  "consensus_score_computed": true/false,
-  "compound_score_gte_threshold": true/false,
-  "no_overclaiming_without_needs_runtime": true/false,
-  "loop_count_under_3": true/false,
-  "stage_4_output_untouched": true/false
-})
+ai_architect_emit_ooda_checkpoint(stage_id=5, phase="observe", decision="All 7 algorithms executed: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=5, phase="observe", decision="Consensus score computed: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=5, phase="observe", decision="Compound score >= threshold: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=5, phase="observe", decision="No overclaiming without NEEDS-RUNTIME: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=5, phase="observe", decision="Loop count under 3: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=5, phase="decide", decision="Stage 4 output untouched: {true/false}", confidence=1.0, session_id="{sessionID}")
 ```
 
 - [ ] All verification algorithms executed?

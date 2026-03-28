@@ -39,7 +39,7 @@ Missing session state on first run = expected. Missing skill-version-manifest = 
 ### 1. MCP server health check
 
 ```
-ai_architect_load_context(stage="health-check", finding_id="{findingID}")
+ai_architect_load_context(stage_id=0, finding_id="{findingID}")
 → If MCP server responds: PASS
 → If timeout or error: BLOCK — MCP server unreachable
 ```
@@ -51,7 +51,7 @@ Verify all tool groups present by calling one tool from each group:
 - Scoring: `ai_architect_compound_score`
 - Adapters: `ai_architect_fs_list`
 - Interview: `ai_architect_query_interview_results`
-- Memory: `ai_architect_check_context_budget`
+- Memory: `ai_architect_check_context_budget(total_tokens=200000, used_tokens=0)`
 - HOR: `ai_architect_run_hor_rules` (dry run with empty input)
 - Xcode: `ai_architect_run_build` (connectivity check only)
 
@@ -69,7 +69,7 @@ ai_architect_fs_read(path="{data_dir}/artifacts/skill-version-manifest.json")
 ### 3. Git and GitHub connectivity
 
 ```
-ai_architect_git_diff(ref="HEAD")
+ai_architect_git_diff(base="HEAD~1", head="HEAD")
 → Success = git operational
 → Failure = BLOCK — git not available
 
@@ -81,6 +81,14 @@ ai_architect_fs_list(path=".")
 
 Probe for codebase intelligence engine MCP tools (`ai_architect_codebase_*`). If available, record `codebase_intelligence: "ai_codebase_intelligence"` in the health report. Downstream stages use the codebase intelligence engine for blast radius, symbol search, and dependency graphs when available. If unavailable, record `codebase_intelligence: "filesystem_only"` — downstream stages fall back to `ai_architect_fs_list` + grep patterns.
 
+Available codebase intelligence tools (from `codebase-intelligence` MCP server):
+- `ai_architect_codebase_list_repos()` — list indexed repositories
+- `ai_architect_codebase_query(query, repo="", limit=5, max_symbols=10, include_content=false)` — hybrid search
+- `ai_architect_codebase_context(name="", uid="", file_path="", include_content=false, repo="")` — 360-degree symbol view
+- `ai_architect_codebase_impact(target, direction="upstream", maxDepth=3, repo="")` — blast radius analysis
+- `ai_architect_codebase_cypher(query, repo="")` — raw Cypher queries
+- `ai_architect_codebase_detect_changes(repo="", scope="unstaged", base_ref="")` — git diff to affected symbols
+
 ### 5. Foundation Models reachability (optional)
 
 Foundation Models availability is checked but not blocking. Pipeline continues if Foundation Models is offline — Apple Intelligence features degrade gracefully.
@@ -89,9 +97,9 @@ Foundation Models availability is checked but not blocking. Pipeline continues i
 
 ```
 ai_architect_save_context(
-  stage="stage-0",
+  stage_id=0,
   finding_id="{findingID}",
-  data={
+  artifact={
     "mcp_server": "reachable",
     "tool_groups": {"verification": true, "prompting": true, "context": true, "scoring": true, "adapters": true, "interview": true, "memory": true, "hor": true, "xcode": true},
     "skill_versions": "all_match",
@@ -111,31 +119,35 @@ ai_architect_fs_write(
 ### 7. Update pipeline state
 
 ```
-ai_architect_save_session_state(session_id="{sessionID}", state={
-  "currentStage": 1,
-  "activeFindingID": "{findingID}",
-  "retryCount": 0
+ai_architect_save_session_state(state_data={
+  "session_id": "{sessionID}",
+  "finding_id": "{findingID}",
+  "current_stage": 1,
+  "status": "running",
+  "completed_stages": [0]
 })
 
-ai_architect_append_audit_event(event={
-  "type": "stage_complete",
-  "stage": 0,
+ai_architect_append_audit_event(event_data={
+  "event_id": "stage-0-complete-{findingID}",
+  "session_id": "{sessionID}",
+  "stage_id": 0,
+  "tool_name": "stage-0-health",
   "outcome": "pass",
-  "findingID": "{findingID}"
+  "message": "Stage 0 health check completed for finding {findingID}"
 })
 ```
 
 ## OODA Checkpoint
 
+Emit one OODA checkpoint per verification point. Each call uses the real tool signature:
+
 ```
-ai_architect_emit_ooda_checkpoint(stage="stage-0", checks={
-  "mcp_server_reachable": true/false,
-  "all_tool_groups_present": true/false,
-  "all_skill_versions_match_manifest": true/false,
-  "git_operational": true/false,
-  "github_authenticated": true/false,
-  "health_report_written": true/false
-})
+ai_architect_emit_ooda_checkpoint(stage_id=0, phase="observe", decision="MCP server reachable: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=0, phase="observe", decision="All tool groups present: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=0, phase="observe", decision="All skill versions match manifest: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=0, phase="observe", decision="Git operational: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=0, phase="observe", decision="GitHub authenticated: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=0, phase="decide", decision="Health report written: {true/false}", confidence=1.0, session_id="{sessionID}")
 ```
 
 - [ ] All MCP tool groups reachable?

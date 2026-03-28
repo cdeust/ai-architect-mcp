@@ -22,10 +22,10 @@ NOT FOR: impact analysis, integration design, PRD generation, implementation, ve
 
 ## Before you start
 
-1. `ai_architect_load_context(stage="stage-0", finding_id="{findingID}")` — verify Stage 0 health report exists and all checks passed
+1. `ai_architect_load_context(stage_id=0, finding_id="{findingID}")` — verify Stage 0 health report exists and all checks passed
 2. `ai_architect_load_session_state(session_id="{sessionID}")` — confirm currentStage = 1
-3. `ai_architect_list_experience_patterns(category="pattern")` — load non-decayed patterns for relevance enrichment
-4. `ai_architect_query_context(query="active findings queue")` — load existing findings to prevent duplicates
+3. `ai_architect_list_experience_patterns(stage_id=1, min_relevance=0.1)` — load non-decayed patterns for relevance enrichment
+4. `ai_architect_query_context(finding_id="{findingID}", query="active findings queue")` — load existing findings to prevent duplicates
 
 Missing Stage 0 health report = BLOCK. Do not discover without a green health check.
 
@@ -57,7 +57,7 @@ ai_architect_fs_list(path=".")
 
 If codebase intelligence engine is available (from Stage 0 health report `codebase_intelligence: "ai_codebase_intelligence"`):
 ```
-ai_architect_codebase_query(query="{finding_keywords}", repo_path="{target_repo}")
+ai_architect_codebase_query(query="{finding_keywords}", repo="{target_repo}")
 → Symbol and pattern discovery across the codebase
 → Enriches findings with structural context
 ```
@@ -74,8 +74,9 @@ Six adapter types (CombinedIngestionAdapter routes automatically):
 
 ```
 ai_architect_select_strategy(
-  task_type="discovery",
-  context="scoring findings for relevance to codebase"
+  project_type="discovery",
+  complexity="medium",
+  characteristics=["relevance_scoring", "source_scanning", "deduplication"]
 )
 → Returns recommended strategy (graphOfThoughts for exploratory, verifiedReasoning for constrained)
 ```
@@ -87,8 +88,8 @@ For each ingested finding, Claude scores using the selected strategy:
 ```
 ai_architect_enhance_prompt(
   prompt="Score this finding for relevance: {finding_summary}",
-  strategy="{selected_strategy}",
-  context="{codebase_context + existing_findings}"
+  context="{codebase_context + existing_findings}",
+  max_iterations=3
 )
 → Claude evaluates: relevance to codebase, novelty vs existing findings, compound impact potential
 → Assigns relevance score 0.0–1.0
@@ -96,13 +97,22 @@ ai_architect_enhance_prompt(
 
 ### 4. Structural verification and deduplication
 
+Build a claim relationship graph from ingested findings to detect duplicates and contradictions:
+
 ```
 ai_architect_verify_graph(
-  claims=["{finding_1}", "{finding_2}", ...],
-  graph_type="dependency"
+  graph_data={
+    "nodes": [
+      {"node_id": "{uuid}", "claim_id": "{uuid}", "label": "{finding_summary}", "node_type": "requirement"}
+    ],
+    "edges": [
+      {"source_id": "{uuid}", "target_id": "{uuid}", "relationship": "implies", "weight": 0.9}
+    ]
+  }
 )
-→ Deduplicate findings with >80% semantic overlap
-→ Rank by relevance score
+→ Detects cycles, contradictions, and orphans
+→ Use contradiction edges to identify duplicate/overlapping findings
+→ Rank remaining findings by relevance score
 → Filter below 0.6 threshold
 ```
 
@@ -110,15 +120,15 @@ ai_architect_verify_graph(
 
 ```
 ai_architect_save_context(
-  stage="stage-1",
+  stage_id=1,
   finding_id="{findingID}",
-  data={
+  artifact={
     "findings": [
       {
         "id": "{findingID}",
         "source": "{source_file}",
         "category": "{source_category}",
-        "relevanceScore": 0.0-1.0,
+        "relevance_score": 0.0-1.0,
         "summary": "{finding_summary}",
         "status": "new"
       }
@@ -138,32 +148,33 @@ ai_architect_fs_write(
 ### 6. Update pipeline state and audit
 
 ```
-ai_architect_save_session_state(session_id="{sessionID}", state={
-  "currentStage": 2,
-  "activeFindingID": "{top_finding_id}",
-  "retryCount": 0
+ai_architect_save_session_state(state_data={
+  "session_id": "{sessionID}",
+  "finding_id": "{top_finding_id}",
+  "current_stage": 2,
+  "status": "running",
+  "completed_stages": [0, 1]
 })
 
-ai_architect_append_audit_event(event={
-  "type": "stage_complete",
-  "stage": 1,
+ai_architect_append_audit_event(event_data={
+  "event_id": "stage-1-complete-{findingID}",
+  "session_id": "{sessionID}",
+  "stage_id": 1,
+  "tool_name": "stage-1-discovery",
   "outcome": "pass",
-  "findingID": "{findingID}",
-  "findings_count": N,
-  "above_threshold": M
+  "message": "Stage 1 discovery completed: {N} findings, {M} above threshold",
+  "metadata": {"findings_count": "{N}", "above_threshold": "{M}"}
 })
 ```
 
 ## OODA Checkpoint
 
 ```
-ai_architect_emit_ooda_checkpoint(stage="stage-1", checks={
-  "at_least_one_finding_above_0.6": true/false,
-  "no_duplicates_in_active_queue": true/false,
-  "all_source_adapters_returned_or_failed": true/false,
-  "findings_written_to_stage_context": true/false,
-  "stage_0_output_untouched": true/false
-})
+ai_architect_emit_ooda_checkpoint(stage_id=1, phase="observe", decision="At least one finding above 0.6: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=1, phase="observe", decision="No duplicates in active queue: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=1, phase="observe", decision="All source adapters returned or failed: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=1, phase="observe", decision="Findings written to StageContext: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=1, phase="decide", decision="Stage 0 output untouched: {true/false}", confidence=1.0, session_id="{sessionID}")
 ```
 
 - [ ] At least one finding with relevance score ≥ 0.6?

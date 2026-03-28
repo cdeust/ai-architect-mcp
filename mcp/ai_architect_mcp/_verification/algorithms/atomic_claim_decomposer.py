@@ -19,6 +19,7 @@ PRIORITY_PATTERN = re.compile(r"\[PRIORITY:(\d+)\]")
 CONTEXT_PATTERN = re.compile(r"\[CONTEXT:([^\]]+)\]")
 MIN_PRIORITY = 1
 MAX_PRIORITY = 100
+DEFAULT_MODEL = "claude-sonnet-4-20250514"
 
 
 class AtomicClaimDecomposer:
@@ -26,16 +27,26 @@ class AtomicClaimDecomposer:
 
     Atomic claims are: self-contained, factual, cannot be split further,
     and decontextualized (include necessary context inline).
+
+    Works in two modes:
+    - Rule-based only (client=None): conjunction splitting
+    - LLM-assisted (client provided): falls back to LLM for complex claims
     """
 
-    def __init__(self, client: object | None = None) -> None:
+    def __init__(
+        self,
+        client: object | None = None,
+        model: str = DEFAULT_MODEL,
+    ) -> None:
         """Initialize the decomposer.
 
         Args:
             client: Anthropic client for LLM-assisted decomposition.
                 None for rule-based only.
+            model: Model ID for LLM calls.
         """
         self._client = client
+        self._model = model
 
     async def decompose(
         self, claim: VerificationClaim
@@ -106,7 +117,7 @@ class AtomicClaimDecomposer:
         return [p.strip() for p in parts if p.strip()]
 
     async def _llm_decompose(self, text: str) -> list[str]:
-        """Use LLM to decompose a complex claim.
+        """Use LLM to decompose a complex claim into atomic facts.
 
         Args:
             text: Claim text to decompose.
@@ -114,7 +125,35 @@ class AtomicClaimDecomposer:
         Returns:
             List of atomic claim texts.
         """
-        return [text]
+        if self._client is None:
+            return [text]
+
+        try:
+            response = await self._client.messages.create(
+                model=self._model,
+                max_tokens=1024,
+                temperature=0.3,
+                system=(
+                    "Decompose the following compound claim into atomic, "
+                    "self-contained facts. Each fact should be independently "
+                    "verifiable. Output one fact per line, numbered."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": f"Claim: {text}",
+                }],
+            )
+            result_text = response.content[0].text.strip()
+            lines = [
+                ln.lstrip("0123456789.) ").strip()
+                for ln in result_text.splitlines()
+                if ln.strip() and any(c.isalpha() for c in ln)
+            ]
+            return lines if lines else [text]
+        except (AttributeError, IndexError, TypeError):
+            return [text]
+        except Exception:
+            return [text]
 
 
 def _build_atomic_claims(

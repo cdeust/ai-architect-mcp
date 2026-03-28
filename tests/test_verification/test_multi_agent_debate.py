@@ -12,6 +12,7 @@ from ai_architect_mcp._models.verification import (
 from ai_architect_mcp._verification.algorithms.multi_agent_debate import (
     MultiAgentDebate,
 )
+from tests.conftest import StubLLMClient
 
 
 class TestMultiAgentDebate:
@@ -19,8 +20,8 @@ class TestMultiAgentDebate:
 
     @pytest.mark.asyncio
     async def test_debate_converges(self) -> None:
-        """Debate with mock client converges to consensus."""
-        debate = MultiAgentDebate(client=None)
+        """Debate with stub client converges to consensus."""
+        debate = MultiAgentDebate(client=StubLLMClient())
         claim = VerificationClaim(
             content="Test claim",
             claim_type=ClaimType.ATOMIC_FACT,
@@ -35,7 +36,7 @@ class TestMultiAgentDebate:
     @pytest.mark.asyncio
     async def test_round_count(self) -> None:
         """Debate with 2 agents and 2 rounds produces valid report."""
-        debate = MultiAgentDebate(client=None)
+        debate = MultiAgentDebate(client=StubLLMClient())
         claim = VerificationClaim(
             content="Test",
             claim_type=ClaimType.ATOMIC_FACT,
@@ -44,3 +45,7 @@ class TestMultiAgentDebate:
         )
         report = await debate.debate(claim, num_agents=2, max_rounds=2)
         assert report.overall_score > 0.0
+
+    def test_rejects_none_client(self) -> None:
+        with pytest.raises(ValueError, match="requires an LLM client"):
+            MultiAgentDebate(client=None)

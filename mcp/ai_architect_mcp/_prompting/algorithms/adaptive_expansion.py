@@ -13,13 +13,20 @@ from ai_architect_mcp._models.prompting import EnhancedPrompt
 DEFAULT_MAX_DEPTH = 10
 DEFAULT_EXPANSION_THRESHOLD = 0.5
 DEFAULT_MIN_NODES_BEFORE_PRUNING = 3
+DEFAULT_MODEL = "claude-sonnet-4-20250514"
 
 
 class AdaptiveExpansion:
     """Adaptive expansion with Tree/Graph of Thoughts."""
 
-    def __init__(self, client: object | None = None) -> None:
+    def __init__(self, client: object, model: str = DEFAULT_MODEL) -> None:
+        if client is None:
+            raise ValueError(
+                "AdaptiveExpansion requires an LLM client. "
+                "Provide a Claude CLI client or AsyncAnthropic instance."
+            )
         self._client = client
+        self._model = model
 
     async def expand(
         self,
@@ -159,9 +166,29 @@ class AdaptiveExpansion:
         Returns:
             Expanded thought content.
         """
-        if self._client is None:
-            return f"Expanded: {content[:100]}... considering {context[:50]}"
-        return content
+        try:
+            response = await self._client.messages.create(
+                model=self._model,
+                max_tokens=1024,
+                temperature=0.7,
+                system=(
+                    "Elaborate on the thought below. Add depth, consider "
+                    "implications, edge cases, and connections to the context. "
+                    "Produce a richer, more detailed version."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"Thought: {content}\n\n"
+                        f"Context:\n{context}"
+                    ),
+                }],
+            )
+            return response.content[0].text.strip()
+        except (AttributeError, IndexError, TypeError):
+            return content
+        except Exception:
+            return content
 
     async def _evaluate_node(self, content: str, context: str) -> float:
         """Evaluate confidence in a thought node.
@@ -173,9 +200,30 @@ class AdaptiveExpansion:
         Returns:
             Confidence score between 0.0 and 1.0.
         """
-        if self._client is None:
-            return min(0.9, 0.6 + len(content) * 0.001)
-        return 0.7
+        try:
+            response = await self._client.messages.create(
+                model=self._model,
+                max_tokens=50,
+                temperature=0.1,
+                system=(
+                    "Rate the quality and relevance of this thought on a scale "
+                    "of 0.0 to 1.0. Respond with only a number."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"Thought: {content}\n\n"
+                        f"Context:\n{context}"
+                    ),
+                }],
+            )
+            text = response.content[0].text.strip()
+            score = float(text.split()[0].strip(".,;:"))
+            return max(0.0, min(1.0, score))
+        except (AttributeError, IndexError, TypeError, ValueError):
+            return 0.7
+        except Exception:
+            return 0.7
 
     def _prune(
         self, nodes: list[ThoughtNode], edges: list[ThoughtEdge], threshold: float

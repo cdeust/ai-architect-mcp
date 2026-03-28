@@ -22,8 +22,8 @@ NOT FOR: code implementation — stage 6, verification rules — stage 7, PRD ge
 
 ## Before you start
 
-1. `ai_architect_load_context(stage="stage-7", finding_id="{findingID}")` — load HOR report (confirms verification passed)
-2. `ai_architect_load_context(stage="stage-4", finding_id="{findingID}")` — load prd-tests.md for performance gate definitions (p95 assertions)
+1. `ai_architect_load_context(stage_id=7, finding_id="{findingID}")` — load HOR report (confirms verification passed)
+2. `ai_architect_load_context(stage_id=4, finding_id="{findingID}")` — load prd-tests.md for performance gate definitions (p95 assertions)
 3. `ai_architect_load_session_state(session_id="{sessionID}")` — confirm currentStage = 8
 
 Missing Stage 7 HOR report = BLOCK. Cannot benchmark without verified implementation.
@@ -55,9 +55,9 @@ Extract p95 assertions from prd-tests.md. Run each benchmark:
 
 ```
 ai_architect_run_tests(
-  project_path="{project_root}",
-  test_filter="*Benchmark*",
-  timeout=300
+  scheme="{scheme_name}",
+  test_plan="Benchmarks",
+  project_path="{project_root}"
 )
 → Captures benchmark results: p95 latency, throughput, memory usage
 → Compares against NFR targets from prd-tests.md
@@ -82,12 +82,12 @@ Compare measured value against target threshold
 
 ```
 ai_architect_save_context(
-  stage="stage-8",
+  stage_id=8,
   finding_id="{findingID}",
-  data={
-    "findingID": "{findingID}",
-    "buildResult": "pass",
-    "benchmarkResults": [
+  artifact={
+    "finding_id": "{findingID}",
+    "build_result": "pass",
+    "benchmark_results": [
       {
         "nfr_id": "NFR-001",
         "metric": "hierarchy_resolution_p95_ms",
@@ -96,7 +96,7 @@ ai_architect_save_context(
         "pass": true/false
       }
     ],
-    "allGatesPass": true/false,
+    "all_gates_pass": true/false,
     "timestamp": "{ISO8601}"
   }
 )
@@ -110,31 +110,32 @@ ai_architect_fs_write(
 ### 5. Update pipeline state and audit
 
 ```
-ai_architect_save_session_state(session_id="{sessionID}", state={
-  "currentStage": 9,
-  "activeFindingID": "{findingID}",
-  "retryCount": 0
+ai_architect_save_session_state(state_data={
+  "session_id": "{sessionID}",
+  "finding_id": "{findingID}",
+  "current_stage": 9,
+  "status": "running",
+  "completed_stages": [0, 1, 2, 3, 4, 5, 6, 7, 8]
 })
 
-ai_architect_append_audit_event(event={
-  "type": "stage_complete",
-  "stage": 8,
+ai_architect_append_audit_event(event_data={
+  "event_id": "stage-8-benchmark-{findingID}",
+  "session_id": "{sessionID}",
+  "stage_id": 8,
+  "tool_name": "stage-8-benchmark",
   "outcome": "pass",
-  "findingID": "{findingID}",
-  "allGatesPass": true/false,
-  "benchmarkResults": [...]
+  "message": "Stage 8 benchmark completed for finding {findingID}: all gates {pass|fail}",
+  "metadata": {"all_gates_pass": "{true|false}", "benchmark_count": "{N}"}
 })
 ```
 
 ## OODA Checkpoint
 
 ```
-ai_architect_emit_ooda_checkpoint(stage="stage-8", checks={
-  "build_succeeds": true/false,
-  "all_performance_gates_pass": true/false,
-  "benchmark_report_written": true/false,
-  "stage_7_output_untouched": true/false
-})
+ai_architect_emit_ooda_checkpoint(stage_id=8, phase="observe", decision="Build succeeds: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=8, phase="observe", decision="All performance gates pass: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=8, phase="observe", decision="Benchmark report written: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=8, phase="decide", decision="Stage 7 output untouched: {true/false}", confidence=1.0, session_id="{sessionID}")
 ```
 
 - [ ] Build succeeds?

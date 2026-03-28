@@ -22,6 +22,86 @@ from ai_architect_mcp._models.verification import (
 )
 
 
+# ── Stub LLM Client ─────────────────────────────────────────────────────────
+
+class _StubContentBlock:
+    """Mimics anthropic SDK ContentBlock for tests."""
+
+    __slots__ = ("text", "type")
+
+    def __init__(self, text: str) -> None:
+        self.text = text
+        self.type = "text"
+
+
+class _StubResponse:
+    """Mimics anthropic SDK Message response for tests."""
+
+    __slots__ = ("content",)
+
+    def __init__(self, text: str) -> None:
+        self.content = [_StubContentBlock(text)]
+
+
+class _StubMessages:
+    """Test double for client.messages that returns deterministic responses."""
+
+    async def create(
+        self,
+        *,
+        model: str = "",
+        max_tokens: int = 4096,
+        temperature: float = 0.7,
+        system: str = "",
+        messages: list[dict] | None = None,
+    ) -> _StubResponse:
+        """Return a deterministic response based on the system prompt."""
+        system_lower = system.lower()
+
+        # Confidence/rating evaluation → return a score
+        if any(kw in system_lower for kw in ("rate", "scale of 0.0 to 1.0", "score")):
+            return _StubResponse("0.78")
+
+        # NLI classification
+        if "classification" in system_lower and "entailment" in system_lower:
+            return _StubResponse("ENTAILMENT")
+
+        # Verification questions
+        if "verification questions" in system_lower:
+            return _StubResponse(
+                "1. Does the context support the claim?\n"
+                "2. Is there contradicting evidence?\n"
+                "3. Is the claim internally consistent?\n"
+                "4. Does the claim align with known facts?\n"
+                "5. Are there edge cases that invalidate it?"
+            )
+
+        # Default: echo the user content with expansion
+        user_text = ""
+        if messages:
+            for msg in messages:
+                if msg.get("role") == "user":
+                    user_text = msg.get("content", "")
+                    break
+
+        return _StubResponse(
+            f"Enhanced analysis: {user_text[:200]}"
+        )
+
+
+class StubLLMClient:
+    """Deterministic LLM client for tests — no network calls."""
+
+    def __init__(self) -> None:
+        self.messages = _StubMessages()
+
+
+@pytest.fixture
+def stub_llm_client() -> StubLLMClient:
+    """Create a stub LLM client for algorithm tests."""
+    return StubLLMClient()
+
+
 @pytest.fixture
 def sample_finding() -> Finding:
     """Create a sample finding for testing."""

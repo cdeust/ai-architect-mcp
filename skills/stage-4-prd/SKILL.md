@@ -28,14 +28,14 @@ NOT FOR: PRD review — that is stage 5, implementation — stage 6, plan interv
 2. `ai_architect_load_context(stage_id=2, finding_id="{findingID}")` — load Stage 2 impact map (compound score, propagation paths, affected engines, cascade points)
 3. `ai_architect_load_context(stage_id=3, finding_id="{findingID}")` — load Stage 3 integration design (affected ports, adapter changes, file manifest, architecture decisions)
 4. `ai_architect_load_session_state(session_id="{sessionID}")` — confirm currentStage = 4, check retryCount
-5. `ai_architect_list_experience_patterns(category="solution")` — load solution patterns for PRD enrichment
-6. `ai_architect_query_context(query="PRDExample records for findingType={finding_type}")` — load few-shot examples
+5. `ai_architect_list_experience_patterns(stage_id=4, min_relevance=0.1)` — load solution patterns for PRD enrichment
+6. `ai_architect_query_context(finding_id="{findingID}", query="PRDExample records for findingType={finding_type}")` — load few-shot examples
 
 **MANDATORY: Load codebase intelligence (if available from Stage 0 health report).**
 
-7. `ai_architect_codebase_query(query="{finding_keywords}", repo_path="{target_repo}")` — execution flows related to the finding
-8. `ai_architect_codebase_context(name="{primary_affected_symbol}", include_source=true, repo_path="{target_repo}")` — full source code + callers + callees of the primary symbol being changed
-9. `ai_architect_codebase_context(name="{caller_symbol}", include_source=true, repo_path="{target_repo}")` — for each direct caller identified in Stage 2
+7. `ai_architect_codebase_query(query="{finding_keywords}", repo="{target_repo}")` — execution flows related to the finding
+8. `ai_architect_codebase_context(name="{primary_affected_symbol}", include_content=true, repo="{target_repo}")` — full source code + callers + callees of the primary symbol being changed
+9. `ai_architect_codebase_context(name="{caller_symbol}", include_content=true, repo="{target_repo}")` — for each direct caller identified in Stage 2
 
 **All loaded data forms `upstream_context` — this is the input to PRD generation. Not optional. Not skippable.**
 
@@ -59,6 +59,7 @@ Missing Stage 1 or Stage 2 = BLOCK. PRD requires finding details and impact anal
 
 ```
 ai_architect_query_context(
+  finding_id="{findingID}",
   query="PRDExample records matching findingType={finding_type}, sorted by compoundScore desc, limit 2"
 )
 → Top-2 matches loaded as structural examples for PRD generation
@@ -72,8 +73,8 @@ ai_architect_query_context(
 ```
 ai_architect_enhance_prompt(
   prompt="Generate clarification questions for gaps in IntegrationDesign not derivable from StageContext",
-  strategy="metaPrompting",
-  context="{integration_design + impact_map + findings}"
+  context="{integration_design + impact_map + findings}",
+  max_iterations=3
 )
 → Returns questions targeting genuinely open gaps
 ```
@@ -81,6 +82,7 @@ ai_architect_enhance_prompt(
 Pre-filter against existing context:
 ```
 ai_architect_query_context(
+  finding_id="{findingID}",
   query="answers already provided in stages 1-3 for finding {findingID}"
 )
 → Discard questions already answered by upstream stages
@@ -97,10 +99,10 @@ ai_architect_query_context(
 
 ```
 ai_architect_save_context(
-  stage="stage-4-clarification",
-  finding_id="{findingID}",
-  data={
-    "findingID": "{findingID}",
+  stage_id=4,
+  finding_id="{findingID}-clarification",
+  artifact={
+    "finding_id": "{findingID}",
     "questions": [...],
     "answers": [...],
     "mode": "interactive|headless",
@@ -118,14 +120,15 @@ ai_architect_fs_write(
 
 ```
 ai_architect_select_strategy(
-  task_type="prd_generation",
-  context="generate 9-file PRD package with full traceability"
+  project_type="prd_generation",
+  complexity="high",
+  characteristics=["traceability", "9_file_package", "acceptance_criteria", "verification"]
 )
 
 ai_architect_enhance_prompt(
   prompt="Generate PRD for finding '{findingID}'",
-  strategy="{selected_strategy}",
-  context="{integration_design + clarification_report + experience_patterns + prd_examples}"
+  context="{integration_design + clarification_report + experience_patterns + prd_examples}",
+  max_iterations=5
 )
 → Returns enhanced prompt with ExperiencePatterns + PRD examples + ClarificationReport
 ```
@@ -189,47 +192,60 @@ Max 25 turns for generation.
 
 ```
 ai_architect_run_hor_rules(
-  document={concatenated PRD content},
-  categories=["all"]
+  artifact={concatenated PRD content as dict},
+  base_score=1.0
 )
 → All 64 pure functions evaluate the PRD
-→ Returns per-rule pass/fail + compound score
+→ Returns per-rule pass/fail + adjusted score
 ```
 
 ### 8. Run verification algorithms on PRD
 
 ```
 ai_architect_verify_claim(
-  claim="{prd_claims}",
-  evidence="{prd_content}",
-  method="chain_of_verification"
+  content="{prd_claim_text}",
+  claim_type="atomic_fact",
+  context="{prd_content}",
+  priority=80
 )
 
 ai_architect_verify_graph(
-  claims=["{FR_IDs}", "{AC_IDs}", "{UT_IDs}", "{STORY_IDs}"],
-  graph_type="traceability"
+  graph_data={
+    "nodes": [
+      {"node_id": "{uuid}", "claim_id": "{uuid}", "label": "FR-001", "node_type": "requirement"},
+      {"node_id": "{uuid}", "claim_id": "{uuid}", "label": "AC-001", "node_type": "test"},
+      {"node_id": "{uuid}", "claim_id": "{uuid}", "label": "STORY-001", "node_type": "specification"}
+    ],
+    "edges": [
+      {"source_id": "{FR_uuid}", "target_id": "{AC_uuid}", "relationship": "tests", "weight": 1.0},
+      {"source_id": "{STORY_uuid}", "target_id": "{FR_uuid}", "relationship": "requires", "weight": 1.0}
+    ]
+  }
 )
-→ Verify acyclic traceability graph, no orphan IDs
+→ Verify acyclic traceability graph, no orphan IDs, no contradictions
 
 ai_architect_evaluate_nli(
-  premise="{requirements}",
-  hypothesis="{acceptance_criteria}",
-  threshold=0.85
+  claim_content="{acceptance_criterion_text}",
+  premise="{requirement_text}",
+  strict=true
 )
-→ NLI entailment check: do ACs entail their FRs?
+→ NLI entailment check: does each AC entail its FR?
 ```
 
 ### 9. Compute compound score
 
 ```
 ai_architect_compound_score(
-  scores={
-    "hor_rules": {from_step_7},
-    "chain_of_verification": {from_step_8},
-    "graph_verification": {from_step_8},
-    "nli_entailment": {from_step_8}
-  },
-  weights={...}
+  relevance={hor_adjusted_score_from_step_7},
+  uniqueness={graph_verification_score_from_step_8},
+  impact={chain_of_verification_score_from_step_8},
+  confidence={nli_entailment_score_from_step_8},
+  weights={
+    "relevance": 0.35,
+    "uniqueness": 0.15,
+    "impact": 0.30,
+    "confidence": 0.20
+  }
 )
 → Compound score 0.0–1.0
 ```
@@ -242,54 +258,60 @@ If compound score < 0.85:
 → Return to step 5 (reuse ClarificationReport — do NOT re-run clarification)
 → Max 3 retries
 
-ai_architect_save_session_state(session_id="{sessionID}", state={
-  "currentStage": 4,
-  "retryCount": {current + 1},
-  "retryReason": "compound_score_below_threshold",
-  "failedRules": [...]
+ai_architect_save_session_state(state_data={
+  "session_id": "{sessionID}",
+  "finding_id": "{findingID}",
+  "current_stage": 4,
+  "status": "running",
+  "completed_stages": [0, 1, 2, 3],
+  "metadata": {"retry_count": "{current + 1}", "retry_reason": "compound_score_below_threshold"}
 })
 ```
 
 If compound score ≥ 0.85:
 ```
 ai_architect_save_context(
-  stage="stage-4",
+  stage_id=4,
   finding_id="{findingID}",
-  data={
-    "prdFiles": [...],
-    "compoundScore": {score},
-    "horResults": {...},
-    "verificationResults": {...}
+  artifact={
+    "prd_files": [...],
+    "compound_score": {score},
+    "hor_results": {...},
+    "verification_results": {...}
   }
 )
 
-ai_architect_save_session_state(session_id="{sessionID}", state={
-  "currentStage": 4.5,
-  "retryCount": 0
+ai_architect_save_session_state(state_data={
+  "session_id": "{sessionID}",
+  "finding_id": "{findingID}",
+  "current_stage": 5,
+  "status": "running",
+  "completed_stages": [0, 1, 2, 3, 4],
+  "metadata": {"next_sub_stage": "interview_4.5"}
 })
 
-ai_architect_append_audit_event(event={
-  "type": "stage_complete",
-  "stage": 4,
+ai_architect_append_audit_event(event_data={
+  "event_id": "stage-4-complete-{findingID}",
+  "session_id": "{sessionID}",
+  "stage_id": 4,
+  "tool_name": "stage-4-prd",
   "outcome": "pass",
-  "compoundScore": {score},
-  "retryCount": {total_retries}
+  "message": "Stage 4 PRD generation completed for finding {findingID}",
+  "metadata": {"compound_score": "{score}", "retry_count": "{total_retries}"}
 })
 ```
 
 ## OODA Checkpoint
 
 ```
-ai_architect_emit_ooda_checkpoint(stage="stage-4", checks={
-  "clarification_report_written_before_generation": true/false,
-  "all_9_prd_files_present": true/false,
-  "compound_score_gte_0.85": true/false,
-  "no_orphan_ids": true/false,
-  "dependency_graph_acyclic": true/false,
-  "needs_runtime_flags_present": true/false,
-  "human_review_required_section_present": true/false,
-  "stage_3_output_untouched": true/false
-})
+ai_architect_emit_ooda_checkpoint(stage_id=4, phase="observe", decision="ClarificationReport written before generation: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=4, phase="observe", decision="All 9 PRD files present: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=4, phase="observe", decision="Compound score >= 0.85: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=4, phase="observe", decision="No orphan IDs: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=4, phase="observe", decision="Dependency graph acyclic: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=4, phase="observe", decision="NEEDS-RUNTIME flags present: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=4, phase="observe", decision="HUMAN REVIEW REQUIRED section present: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=4, phase="decide", decision="Stage 3 output untouched: {true/false}", confidence=1.0, session_id="{sessionID}")
 ```
 
 - [ ] ClarificationReport written before generation starts?

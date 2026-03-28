@@ -35,6 +35,16 @@ DerivedData/
 # Claude
 .claude/cache/
 
+# Codebase intelligence (removed — gitnexus MCP unstable)
+.gitnexus/
+
+# Pipeline runtime artifacts
+.pipeline/brain-trace.jsonl
+mcp/.pipeline/brain-trace.jsonl
+.pipeline/audit/
+.pipeline/sessions/
+.pipeline/artifacts/FIND-*/
+
 # Build outputs
 build/
 .build/

@@ -22,7 +22,7 @@ NOT FOR: code implementation — stage 6, benchmark — stage 8, any LLM reasoni
 
 ## Before you start
 
-1. `ai_architect_load_context(stage="stage-6", finding_id="{findingID}")` — load implementation manifest from Stage 6
+1. `ai_architect_load_context(stage_id=6, finding_id="{findingID}")` — load implementation manifest from Stage 6
 2. `ai_architect_load_session_state(session_id="{sessionID}")` — confirm currentStage = 7, check retryCount
 
 Missing Stage 6 implementation manifest = BLOCK. Cannot verify without implementation.
@@ -65,12 +65,11 @@ Any tool not on this list = BLOCK. Enforced by `hooks/pre-tool-use/stage-7-gate.
 
 ```
 ai_architect_run_hor_rules(
-  document={implementation_content + prd_content},
-  categories=["all"]
+  artifact={implementation_content + prd_content as dict},
+  base_score=1.0
 )
 → All 64 pure functions evaluate implementation against PRD
-→ Returns per-rule: {rule_id, category, pass/fail, violation_details}
-→ Compound score computed from results
+→ Returns per-rule results, passed/failed counts, and adjusted score
 
 Categories (10):
   - Core PRD structural (23 rules, 48 critical: −0.15 per violation)
@@ -88,8 +87,8 @@ Categories (10):
 Can also run by category for targeted verification:
 ```
 ai_architect_run_hor_category(
-  document={content},
-  category="security"
+  category="security",
+  artifact={content as dict}
 )
 ```
 
@@ -109,17 +108,23 @@ ai_architect_run_build(
 
 ```
 ai_architect_verify_graph(
-  claims=["{implementation_imports}"],
-  graph_type="dependency"
+  graph_data={
+    "nodes": [
+      {"node_id": "{uuid}", "claim_id": "{uuid}", "label": "{module_name}", "node_type": "implementation"}
+    ],
+    "edges": [
+      {"source_id": "{importer_uuid}", "target_id": "{imported_uuid}", "relationship": "depends", "weight": 1.0}
+    ]
+  }
 )
-→ Verify no circular dependencies in implementation
-→ Verify implementation matches PRD file change manifest
+→ Verify no cycles (circular dependencies) in implementation
+→ Verify no contradictions or orphans in dependency graph
 ```
 
 ### 4. Git diff verification
 
 ```
-ai_architect_git_diff(ref="main...pipeline/{findingID}")
+ai_architect_git_diff(base="main", head="pipeline/{findingID}")
 → Verify diff matches implementation manifest
 → No files changed outside manifest scope
 → No untracked files that should be committed
@@ -129,17 +134,15 @@ ai_architect_git_diff(ref="main...pipeline/{findingID}")
 
 ```
 ai_architect_compound_score(
-  scores={
-    "hor_rules_pass_rate": {pass_count / 64},
-    "build_result": {1.0 if pass else 0.0},
-    "graph_verification": {1.0 if no cycles else 0.0},
-    "manifest_match": {1.0 if diff matches manifest else 0.0}
-  },
+  relevance={pass_count / 64},
+  uniqueness={1.0 if build_pass else 0.0},
+  impact={1.0 if no_cycles else 0.0},
+  confidence={1.0 if diff_matches_manifest else 0.0},
   weights={
-    "hor_rules_pass_rate": 0.4,
-    "build_result": 0.3,
-    "graph_verification": 0.15,
-    "manifest_match": 0.15
+    "relevance": 0.4,
+    "uniqueness": 0.3,
+    "impact": 0.15,
+    "confidence": 0.15
   }
 )
 ```
@@ -149,15 +152,15 @@ ai_architect_compound_score(
 **All gates pass:**
 ```
 ai_architect_save_context(
-  stage="stage-7",
+  stage_id=7,
   finding_id="{findingID}",
-  data={
-    "findingID": "{findingID}",
-    "horResults": {per_rule_results},
-    "horPassRate": {pass_count / 64},
-    "buildResult": "pass",
-    "graphVerification": "pass",
-    "compoundScore": {score},
+  artifact={
+    "finding_id": "{findingID}",
+    "hor_results": {per_rule_results},
+    "hor_pass_rate": {pass_count / 64},
+    "build_result": "pass",
+    "graph_verification": "pass",
+    "compound_score": {score},
     "timestamp": "{ISO8601}"
   }
 )
@@ -167,9 +170,12 @@ ai_architect_fs_write(
   content={HOR report JSON}
 )
 
-ai_architect_save_session_state(session_id="{sessionID}", state={
-  "currentStage": 8,
-  "retryCount": 0
+ai_architect_save_session_state(state_data={
+  "session_id": "{sessionID}",
+  "finding_id": "{findingID}",
+  "current_stage": 8,
+  "status": "running",
+  "completed_stages": [0, 1, 2, 3, 4, 5, 6, 7]
 })
 ```
 
@@ -179,41 +185,40 @@ ai_architect_save_session_state(session_id="{sessionID}", state={
 → Loop back to Stage 6 for fixes
 → Max 3 retries of the 7→6 loop
 
-ai_architect_save_session_state(session_id="{sessionID}", state={
-  "currentStage": 6,
-  "retryCount": {current + 1},
-  "retryReason": "verification_failure",
-  "failedGates": [...]
+ai_architect_save_session_state(state_data={
+  "session_id": "{sessionID}",
+  "finding_id": "{findingID}",
+  "current_stage": 6,
+  "status": "running",
+  "completed_stages": [0, 1, 2, 3, 4, 5],
+  "metadata": {"retry_count": "{current + 1}", "retry_reason": "verification_failure"}
 })
 ```
 
 ### 7. Audit event
 
 ```
-ai_architect_append_audit_event(event={
-  "type": "stage_complete",
-  "stage": 7,
-  "outcome": "pass|loop_to_6",
-  "findingID": "{findingID}",
-  "compoundScore": {score},
-  "horPassRate": {rate},
-  "buildResult": "pass|fail",
-  "retryCount": N
+ai_architect_append_audit_event(event_data={
+  "event_id": "stage-7-verification-{findingID}",
+  "session_id": "{sessionID}",
+  "stage_id": 7,
+  "tool_name": "stage-7-verification",
+  "outcome": "pass",
+  "message": "Stage 7 verification completed for finding {findingID}: {decision}",
+  "metadata": {"compound_score": "{score}", "hor_pass_rate": "{rate}", "build_result": "{pass|fail}"}
 })
 ```
 
 ## OODA Checkpoint
 
 ```
-ai_architect_emit_ooda_checkpoint(stage="stage-7", checks={
-  "all_64_hor_rules_evaluated": true/false,
-  "build_succeeds": true/false,
-  "no_circular_dependencies": true/false,
-  "diff_matches_manifest": true/false,
-  "loop_count_under_3": true/false,
-  "no_llm_calls_made": true/false,
-  "stage_6_output_untouched": true/false
-})
+ai_architect_emit_ooda_checkpoint(stage_id=7, phase="observe", decision="All 64 HOR rules evaluated: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=7, phase="observe", decision="Build succeeds: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=7, phase="observe", decision="No circular dependencies: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=7, phase="observe", decision="Diff matches manifest: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=7, phase="observe", decision="Loop count under 3: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=7, phase="observe", decision="No LLM calls made: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=7, phase="decide", decision="Stage 6 output untouched: {true/false}", confidence=1.0, session_id="{sessionID}")
 ```
 
 - [ ] All 64 HOR rules evaluated?

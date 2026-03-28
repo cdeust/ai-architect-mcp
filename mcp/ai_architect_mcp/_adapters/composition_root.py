@@ -46,6 +46,131 @@ logger = logging.getLogger(__name__)
 
 ENV_MCPBRIDGE_PATH: str = "AI_ARCHITECT_MCPBRIDGE_PATH"
 ENV_ANTHROPIC_API_KEY: str = "ANTHROPIC_API_KEY"
+ENV_SESSION_TOKEN: str = "CLAUDE_CODE_SESSION_ACCESS_TOKEN"
+
+
+# ── Claude CLI Client ────────────────────────────────────────────────────────
+
+class _ContentBlock:
+    """Mimics anthropic SDK ContentBlock."""
+
+    __slots__ = ("text", "type")
+
+    def __init__(self, text: str) -> None:
+        self.text = text
+        self.type = "text"
+
+
+class _CLIResponse:
+    """Mimics anthropic SDK Message response."""
+
+    __slots__ = ("content",)
+
+    def __init__(self, text: str) -> None:
+        self.content = [_ContentBlock(text)]
+
+
+class _CLIMessages:
+    """Mimics client.messages with a create() that calls claude CLI."""
+
+    def __init__(self, claude_path: str) -> None:
+        self._claude = claude_path
+
+    async def create(
+        self,
+        *,
+        model: str = "sonnet",
+        max_tokens: int = 4096,
+        temperature: float = 0.7,
+        system: str = "",
+        messages: list[dict] | None = None,
+    ) -> _CLIResponse:
+        """Call claude CLI in print mode and return the response."""
+        import asyncio
+
+        user_content = ""
+        if messages:
+            for msg in messages:
+                if msg.get("role") == "user":
+                    user_content = msg.get("content", "")
+                    break
+
+        if not user_content:
+            return _CLIResponse("")
+
+        # Map full model IDs to CLI aliases
+        model_alias = model
+        if "sonnet" in model:
+            model_alias = "sonnet"
+        elif "opus" in model:
+            model_alias = "opus"
+        elif "haiku" in model:
+            model_alias = "haiku"
+
+        args = [
+            self._claude,
+            "-p", user_content,
+            "--output-format", "json",
+            "--model", model_alias,
+            "--max-turns", "1",
+            "--no-session-persistence",
+        ]
+        if system:
+            args.extend(["--system-prompt", system])
+
+        # Clean env: remove Claude Code session markers so CLI runs standalone
+        clean_env = {
+            k: v for k, v in os.environ.items()
+            if k not in (
+                "CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT",
+                "CLAUDE_CODE_SESSION_ACCESS_TOKEN",
+            )
+        }
+
+        proc = await asyncio.create_subprocess_exec(
+            *args,
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            env=clean_env,
+        )
+        stdout, stderr = await asyncio.wait_for(
+            proc.communicate(), timeout=180,
+        )
+
+        text = stdout.decode("utf-8", errors="replace").strip()
+
+        # --output-format json returns {"type":"result","result":"..."}
+        if text:
+            try:
+                data = json.loads(text)
+                if isinstance(data, dict):
+                    text = data.get("result", "") or data.get("content", "") or text
+            except (json.JSONDecodeError, ValueError):
+                pass
+
+        return _CLIResponse(text)
+
+
+class ClaudeCLIClient:
+    """LLM client backed by the claude CLI — uses subscription auth via Keychain."""
+
+    def __init__(self, claude_path: str) -> None:
+        self.messages = _CLIMessages(claude_path)
+
+
+def _find_claude_cli() -> str | None:
+    """Locate the claude CLI binary."""
+    candidates = [
+        shutil.which("claude"),
+        os.path.expanduser("~/.local/bin/claude"),
+        "/usr/local/bin/claude",
+        "/opt/homebrew/bin/claude",
+    ]
+    for path in candidates:
+        if path and os.path.isfile(path) and os.access(path, os.X_OK):
+            return path
+    return None
 
 
 class CompositionRoot:
@@ -185,40 +310,45 @@ class CompositionRoot:
             return None
 
     def create_llm_client(self) -> object | None:
-        """Create or return cached Anthropic async client.
+        """Create or return cached LLM client.
+
+        Used for non-MCP contexts (GitHub Actions, CLI scripts).
+        MCP tools use ``SamplingClient(ctx)`` instead — see
+        ``_adapters/sampling_client.py``.
 
         Auth priority:
-        1. Claude subscription OAuth token from ~/.claude/.credentials.json
-        2. ANTHROPIC_API_KEY environment variable
+        1. ANTHROPIC_API_KEY env var → AsyncAnthropic SDK.
+        2. Claude CLI (standalone, not inside Claude Code).
 
         Returns:
-            AsyncAnthropic instance or None.
+            AsyncAnthropic instance, ClaudeCLIClient, or None.
         """
         if self._llm_client is not None:
             return self._llm_client
 
-        try:
-            from anthropic import AsyncAnthropic
-        except ImportError:
-            logger.warning("anthropic package not installed — LLM-backed tools will use stub mode")
-            return None
-
-        # 1. Try Claude subscription OAuth token
-        oauth_token = self._read_claude_oauth_token()
-        if oauth_token:
-            self._llm_client = AsyncAnthropic(auth_token=oauth_token)
-            logger.info("LLM client created (AsyncAnthropic via Claude OAuth)")
-            return self._llm_client
-
-        # 2. Fall back to API key
+        # 1. Direct SDK with API key
         api_key = os.environ.get(ENV_ANTHROPIC_API_KEY)
         if api_key:
-            self._llm_client = AsyncAnthropic(api_key=api_key)
-            logger.info("LLM client created (AsyncAnthropic via API key)")
+            try:
+                from anthropic import AsyncAnthropic
+                self._llm_client = AsyncAnthropic(api_key=api_key)
+                logger.info("LLM client created (AsyncAnthropic via API key)")
+                return self._llm_client
+            except ImportError:
+                pass
+
+        # 2. Claude CLI — for standalone usage outside Claude Code
+        claude_path = _find_claude_cli()
+        if claude_path:
+            self._llm_client = ClaudeCLIClient(claude_path)
+            logger.info("LLM client created (Claude CLI at %s)", claude_path)
             return self._llm_client
 
-        logger.warning("No Claude OAuth token or ANTHROPIC_API_KEY — LLM-backed tools will use stub mode")
-        return None
+        raise RuntimeError(
+            "No LLM client available. "
+            "Set ANTHROPIC_API_KEY or install the Claude CLI. "
+            "Note: MCP tools should use SamplingClient(ctx) instead."
+        )
 
     def create_context(self) -> StageContextPort:
         """Create a stage context adapter.

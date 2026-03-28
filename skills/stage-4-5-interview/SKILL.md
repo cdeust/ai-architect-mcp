@@ -22,8 +22,8 @@ NOT FOR: PRD generation — stage 4, PRD review — stage 5, implementation — 
 
 ## Before you start
 
-1. `ai_architect_load_context(stage="stage-4", finding_id="{findingID}")` — load PRD artifact from Stage 4
-2. `ai_architect_load_session_state(session_id="{sessionID}")` — confirm currentStage = 4.5
+1. `ai_architect_load_context(stage_id=4, finding_id="{findingID}")` — load PRD artifact from Stage 4
+2. `ai_architect_load_session_state(session_id="{sessionID}")` — confirm current_stage = 5 with metadata next_sub_stage = interview_4.5
 3. `ai_architect_query_interview_results(finding_id="{findingID}")` — check for prior interview results (retry scenario)
 
 Missing Stage 4 PRD artifact = BLOCK. Cannot interview without a PRD.
@@ -41,7 +41,7 @@ Missing Stage 4 PRD artifact = BLOCK. Cannot interview without a PRD.
 ### 1. Load PRD artifact
 
 ```
-ai_architect_load_context(stage="stage-4", finding_id="{findingID}")
+ai_architect_load_context(stage_id=4, finding_id="{findingID}")
 → Extract PRD content for interview evaluation
 → Parse into structured format: title, content, sections, requirements, user_stories, assumptions, success_metrics
 ```
@@ -51,68 +51,67 @@ ai_architect_load_context(stage="stage-4", finding_id="{findingID}")
 Run each dimension scorer against the PRD artifact:
 
 ```
-For each dimension D1–D10:
+For each dimension in DimensionType enum:
   ai_architect_score_dimension(
-    finding_id="{findingID}",
-    dimension="D{N}",
-    prd_artifact={prd_content}
+    dimension="{dimension_enum_value}",
+    artifact={prd_content}
   )
 ```
 
-**10 Interview Dimensions:**
+**10 Interview Dimensions (DimensionType enum values):**
 
-| ID | Dimension | Probing Question |
-|----|-----------|-----------------|
-| D1 | Technical Implementation | "What happens when X fails?" |
-| D2 | UI/UX | "How does the user recover from this state?" |
-| D3 | Risks | "What's the worst-case scenario here?" |
-| D4 | Tradeoffs | "You chose X over Y. What did you give up?" |
-| D5 | Edge Cases | "What if this input is empty? Duplicated? Huge?" |
-| D6 | Dependencies | "What breaks if this service is down?" |
-| D7 | Testing | "How do you verify this actually works?" |
-| D8 | Deployment | "Can you roll this back in 5 minutes?" |
-| D9 | Gaps | "What's missing from this plan?" |
-| D10 | Security | "Where can this be exploited?" |
+| ID | Enum Value | Dimension |
+|----|------------|-----------|
+| D1 | `D1_SECTIONS_PRESENT` | Required sections present |
+| D2 | `D2_HEADER_FORMAT` | Header formatting compliance |
+| D3 | `D3_ID_CONSISTENCY` | FR/AC/STORY ID consistency |
+| D4 | `D4_OUTLINE_FLOW` | Logical section ordering |
+| D5 | `D5_ARTIFACT_COHERENCE` | Cross-artifact coherence |
+| D6 | `D6_CLARITY_LEVEL` | Requirement clarity |
+| D7 | `D7_STAKEHOLDER_ALIGNMENT` | Stakeholder needs alignment |
+| D8 | `D8_REQUIREMENT_PRECISION` | Requirement precision |
+| D9 | `D9_ASSUMPTION_VALIDATION` | Assumptions validated |
+| D10 | `D10_SUCCESS_METRICS` | Success metrics defined |
 
-Each dimension returns a score 0.0–1.0 and a list of findings (if any).
+Each dimension returns a score 0.0–1.0, a pass/fail boolean, and a list of findings.
 
 ### 3. Run interview gate evaluation
 
 ```
 ai_architect_run_interview_gate(
-  finding_id="{findingID}",
-  prd_artifact={prd_content}
+  artifact={prd_content},
+  finding_id="{findingID}"
 )
 → Aggregates all 10 dimension scores
 → Returns gate decision: APPROVED | PROVISIONAL | REJECTED
-→ Critical dimensions (D1, D3, D6, D10) below 0.5 → REJECTED
-→ Advisory dimensions below 0.6 → PROVISIONAL with warnings
-→ All dimensions ≥ 0.6 → APPROVED
+→ Critical dimensions below critical_threshold (0.8) → REJECTED
+→ Advisory dimensions below advisory_threshold (0.6) → PROVISIONAL with warnings
+→ All dimensions above thresholds → APPROVED
 ```
 
 ### 4. Write interview result to StageContext
 
 ```
 ai_architect_save_context(
-  stage="stage-4.5",
-  finding_id="{findingID}",
-  data={
-    "findingID": "{findingID}",
-    "dimensionScores": {
-      "D1_technical": 0.0-1.0,
-      "D2_ux": 0.0-1.0,
-      "D3_risks": 0.0-1.0,
-      "D4_tradeoffs": 0.0-1.0,
-      "D5_edge_cases": 0.0-1.0,
-      "D6_dependencies": 0.0-1.0,
-      "D7_testing": 0.0-1.0,
-      "D8_deployment": 0.0-1.0,
-      "D9_gaps": 0.0-1.0,
-      "D10_security": 0.0-1.0
+  stage_id=4,
+  finding_id="{findingID}-interview",
+  artifact={
+    "finding_id": "{findingID}",
+    "dimension_scores": {
+      "D1_SECTIONS_PRESENT": 0.0-1.0,
+      "D2_HEADER_FORMAT": 0.0-1.0,
+      "D3_ID_CONSISTENCY": 0.0-1.0,
+      "D4_OUTLINE_FLOW": 0.0-1.0,
+      "D5_ARTIFACT_COHERENCE": 0.0-1.0,
+      "D6_CLARITY_LEVEL": 0.0-1.0,
+      "D7_STAKEHOLDER_ALIGNMENT": 0.0-1.0,
+      "D8_REQUIREMENT_PRECISION": 0.0-1.0,
+      "D9_ASSUMPTION_VALIDATION": 0.0-1.0,
+      "D10_SUCCESS_METRICS": 0.0-1.0
     },
-    "gateDecision": "APPROVED|PROVISIONAL|REJECTED",
+    "gate_decision": "APPROVED|PROVISIONAL|REJECTED",
     "findings": [...],
-    "advisoryWarnings": [...],
+    "advisory_warnings": [...],
     "timestamp": "{ISO8601}"
   }
 )
@@ -122,30 +121,38 @@ ai_architect_save_context(
 
 **APPROVED:**
 ```
-ai_architect_save_session_state(session_id="{sessionID}", state={
-  "currentStage": 5,
-  "retryCount": 0
+ai_architect_save_session_state(state_data={
+  "session_id": "{sessionID}",
+  "finding_id": "{findingID}",
+  "current_stage": 5,
+  "status": "running",
+  "completed_stages": [0, 1, 2, 3, 4]
 })
 → Proceed to Stage 5 (PRD Review)
 ```
 
 **PROVISIONAL:**
 ```
-ai_architect_save_session_state(session_id="{sessionID}", state={
-  "currentStage": 5,
-  "retryCount": 0,
-  "advisoryWarnings": [...]
+ai_architect_save_session_state(state_data={
+  "session_id": "{sessionID}",
+  "finding_id": "{findingID}",
+  "current_stage": 5,
+  "status": "running",
+  "completed_stages": [0, 1, 2, 3, 4],
+  "metadata": {"interview_decision": "PROVISIONAL", "advisory_warnings": "..."}
 })
 → Proceed to Stage 5 with advisory warnings attached
 ```
 
 **REJECTED:**
 ```
-ai_architect_save_session_state(session_id="{sessionID}", state={
-  "currentStage": 4,
-  "retryCount": {current + 1},
-  "retryReason": "interview_rejection",
-  "rejectionFindings": [...]
+ai_architect_save_session_state(state_data={
+  "session_id": "{sessionID}",
+  "finding_id": "{findingID}",
+  "current_stage": 4,
+  "status": "running",
+  "completed_stages": [0, 1, 2, 3],
+  "metadata": {"retry_count": "{current + 1}", "retry_reason": "interview_rejection"}
 })
 → Return to Stage 4 for regeneration (max 2 retries from interview)
 ```
@@ -153,26 +160,25 @@ ai_architect_save_session_state(session_id="{sessionID}", state={
 ### 6. Audit event
 
 ```
-ai_architect_append_audit_event(event={
-  "type": "interview_complete",
-  "stage": 4.5,
-  "outcome": "{gate_decision}",
-  "findingID": "{findingID}",
-  "dimensionScores": {...},
-  "retryCount": N
+ai_architect_append_audit_event(event_data={
+  "event_id": "stage-4.5-interview-{findingID}",
+  "session_id": "{sessionID}",
+  "stage_id": 4,
+  "tool_name": "stage-4.5-interview",
+  "outcome": "{gate_decision_lowercase}",
+  "message": "Plan interview completed for finding {findingID}: {gate_decision}",
+  "metadata": {"gate_decision": "{gate_decision}", "retry_count": "{N}"}
 })
 ```
 
 ## OODA Checkpoint
 
 ```
-ai_architect_emit_ooda_checkpoint(stage="stage-4.5", checks={
-  "all_10_dimensions_scored": true/false,
-  "gate_decision_computed": true/false,
-  "no_critical_dimension_below_0.5": true/false,
-  "interview_result_written": true/false,
-  "stage_4_output_untouched": true/false
-})
+ai_architect_emit_ooda_checkpoint(stage_id=4, phase="observe", decision="All 10 dimensions scored: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=4, phase="observe", decision="Gate decision computed: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=4, phase="observe", decision="No critical dimension below threshold: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=4, phase="observe", decision="Interview result written to StageContext: {true/false}", confidence=1.0, session_id="{sessionID}")
+ai_architect_emit_ooda_checkpoint(stage_id=4, phase="decide", decision="Stage 4 PRD artifact untouched: {true/false}", confidence=1.0, session_id="{sessionID}")
 ```
 
 - [ ] All 10 dimensions scored?

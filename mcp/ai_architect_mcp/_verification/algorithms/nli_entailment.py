@@ -19,6 +19,7 @@ CONTRADICTION_SCORE = 0.0
 TEMPERATURE = 0.1
 NLI_CONFIDENCE = 0.85
 PREMISE_PREVIEW_LEN = 200
+DEFAULT_MODEL = "claude-sonnet-4-20250514"
 
 NLI_PROMPT_TEMPLATE = (
     "Classify the relationship between the premise and hypothesis.\n\n"
@@ -40,16 +41,26 @@ class NLIEntailmentEvaluator:
     """
 
     def __init__(
-        self, client: object | None = None, strict: bool = True
+        self,
+        client: object,
+        strict: bool = True,
+        model: str = DEFAULT_MODEL,
     ) -> None:
         """Initialize the NLI evaluator.
 
         Args:
-            client: Anthropic client for LLM calls. None for testing.
+            client: Anthropic client for LLM calls.
             strict: If True, NEUTRAL scores 0.3. If False, 0.6.
+            model: Model ID for LLM calls.
         """
+        if client is None:
+            raise ValueError(
+                "NLIEntailmentEvaluator requires an LLM client. "
+                "Provide a Claude CLI client or AsyncAnthropic instance."
+            )
         self._client = client
         self._strict = strict
+        self._model = model
 
     async def evaluate(
         self, claim: VerificationClaim, premise: str
@@ -126,16 +137,13 @@ class NLIEntailmentEvaluator:
         Returns:
             Classification string: ENTAILMENT, NEUTRAL, or CONTRADICTION.
         """
-        if self._client is None:
-            return "NEUTRAL"
-
         prompt = NLI_PROMPT_TEMPLATE.format(
             premise=premise, hypothesis=hypothesis
         )
 
         try:
             response = await self._client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model=self._model,
                 max_tokens=50,
                 temperature=TEMPERATURE,
                 messages=[{"role": "user", "content": prompt}],
@@ -146,6 +154,5 @@ class NLIEntailmentEvaluator:
             if "CONTRADICTION" in text:
                 return "CONTRADICTION"
             return "NEUTRAL"
-        except (AttributeError, IndexError, TypeError) as exc:
-            _ = exc
+        except (AttributeError, IndexError, TypeError):
             return "NEUTRAL"

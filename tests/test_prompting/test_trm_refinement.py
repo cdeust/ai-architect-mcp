@@ -5,24 +5,29 @@ from __future__ import annotations
 import pytest
 
 from ai_architect_mcp._prompting.algorithms.trm_refinement import TRMRefinement
+from tests.conftest import StubLLMClient
 
 
 class TestTRMRefinement:
     @pytest.mark.asyncio
     async def test_halts_on_convergence(self) -> None:
-        trm = TRMRefinement(client=None)
+        trm = TRMRefinement(client=StubLLMClient())
         result = await trm.refine("Test prompt", "Test context", max_iterations=10)
         assert result.iterations <= 10
         assert result.confidence > 0.0
 
     @pytest.mark.asyncio
     async def test_max_iterations_respected(self) -> None:
-        trm = TRMRefinement(client=None)
+        trm = TRMRefinement(client=StubLLMClient())
         result = await trm.refine("Test prompt", "Test context", max_iterations=2)
         assert result.iterations <= 2
 
     @pytest.mark.asyncio
     async def test_enhanced_differs_from_original(self) -> None:
-        trm = TRMRefinement(client=None)
+        trm = TRMRefinement(client=StubLLMClient())
         result = await trm.refine("Original", "Context", max_iterations=3)
         assert result.original == "Original"
+
+    def test_rejects_none_client(self) -> None:
+        with pytest.raises(ValueError, match="requires an LLM client"):
+            TRMRefinement(client=None)

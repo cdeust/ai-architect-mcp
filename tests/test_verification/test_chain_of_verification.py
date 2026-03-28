@@ -12,6 +12,7 @@ from ai_architect_mcp._models.verification import (
 from ai_architect_mcp._verification.algorithms.chain_of_verification import (
     ChainOfVerification,
 )
+from tests.conftest import StubLLMClient
 
 
 class TestChainOfVerification:
@@ -20,7 +21,7 @@ class TestChainOfVerification:
     @pytest.mark.asyncio
     async def test_verify(self) -> None:
         """Verification produces valid evaluation with evidence."""
-        cov = ChainOfVerification(client=None)
+        cov = ChainOfVerification(client=StubLLMClient())
         claim = VerificationClaim(
             content="Test claim",
             claim_type=ClaimType.ATOMIC_FACT,
@@ -31,3 +32,7 @@ class TestChainOfVerification:
         assert result.evaluator_id == "chain_of_verification"
         assert result.score >= 0.0
         assert len(result.evidence) > 0
+
+    def test_rejects_none_client(self) -> None:
+        with pytest.raises(ValueError, match="requires an LLM client"):
+            ChainOfVerification(client=None)

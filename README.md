@@ -156,15 +156,17 @@ claude mcp add ai-architect -- ai_architect_mcp
 | `run_hor_category` | Run rules by category (10 categories) |
 | `run_hor_single` | Run a single rule by ID |
 
-### Prompting (5 tools)
+### Prompting (7 tools)
 
 | Tool | Description |
 |------|-------------|
-| `enhance_prompt` | Apply thinking strategy to a prompt |
+| `enhance_prompt` | TRM recursive refinement (Self-Refine) |
 | `select_strategy` | Auto-select strategy by task type |
 | `expand_thought` | Adaptive Expansion with ToT/GoT |
 | `fuse_confidence` | Confidence Fusion across sources |
-| `refine_prompt` | Metacognitive prompt refinement |
+| `metacognitive_monitor` | Self-aware reasoning with intervention triggers |
+| `thought_buffer` | Signal-aware template-based enhancement |
+| `collaborative_infer` | Multi-path reasoning with consensus detection |
 
 ### Context (8 tools)
 

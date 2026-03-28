@@ -22,8 +22,7 @@ UNCONVERGED_CONFIDENCE = 0.65
 PASS_THRESHOLD = 0.6
 OWN_WEIGHT = 0.6
 OTHERS_WEIGHT = 0.4
-AGENT_BASE_SCORE = 0.7
-AGENT_SCORE_INCREMENT = 0.05
+DEFAULT_MODEL = "claude-sonnet-4-20250514"
 
 
 class MultiAgentDebate:
@@ -33,13 +32,20 @@ class MultiAgentDebate:
     refine their positions after seeing other assessments.
     """
 
-    def __init__(self, client: object | None = None) -> None:
+    def __init__(self, client: object, model: str = DEFAULT_MODEL) -> None:
         """Initialize the multi-agent debate.
 
         Args:
-            client: Anthropic client for LLM calls. None for testing.
+            client: Anthropic client for LLM calls.
+            model: Model ID for LLM calls.
         """
+        if client is None:
+            raise ValueError(
+                "MultiAgentDebate requires an LLM client. "
+                "Provide a Claude CLI client or AsyncAnthropic instance."
+            )
         self._client = client
+        self._model = model
 
     async def debate(
         self,
@@ -147,9 +153,34 @@ class MultiAgentDebate:
         Returns:
             Assessment score in [0, 1].
         """
-        if self._client is None:
-            return AGENT_BASE_SCORE + agent_idx * AGENT_SCORE_INCREMENT
-        return AGENT_BASE_SCORE
+        personas = [
+            "You are a skeptical analyst. Look for flaws and weaknesses.",
+            "You are a supportive analyst. Look for strengths and merit.",
+            "You are a neutral analyst. Weigh evidence impartially.",
+        ]
+        persona = personas[agent_idx % len(personas)]
+
+        try:
+            response = await self._client.messages.create(
+                model=self._model,
+                max_tokens=50,
+                temperature=0.3 + (agent_idx * 0.1),
+                system=(
+                    f"{persona} Rate the claim's validity from 0.0 to 1.0. "
+                    "Respond with only a number."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": f"Claim: {claim.content}",
+                }],
+            )
+            text = response.content[0].text.strip()
+            score = float(text.split()[0].strip(".,;:"))
+            return max(0.0, min(1.0, score))
+        except (AttributeError, IndexError, TypeError, ValueError):
+            return 0.5
+        except Exception:
+            return 0.5
 
     async def _refine_assessment(
         self,
@@ -169,10 +200,35 @@ class MultiAgentDebate:
         Returns:
             Refined assessment score in [0, 1].
         """
-        if self._client is None:
+        other_summary = ", ".join(f"{s:.2f}" for s in other_scores)
+        try:
+            response = await self._client.messages.create(
+                model=self._model,
+                max_tokens=50,
+                temperature=0.1,
+                system=(
+                    "You previously scored a claim. Other agents scored differently. "
+                    "Reconsider and provide a revised score (0.0-1.0). "
+                    "Respond with only a number."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"Claim: {claim.content}\n"
+                        f"Your previous score: {own_score:.2f}\n"
+                        f"Other agents' scores: {other_summary}"
+                    ),
+                }],
+            )
+            text = response.content[0].text.strip()
+            score = float(text.split()[0].strip(".,;:"))
+            return max(0.0, min(1.0, score))
+        except (AttributeError, IndexError, TypeError, ValueError):
             avg_others = sum(other_scores) / max(len(other_scores), 1)
             return own_score * OWN_WEIGHT + avg_others * OTHERS_WEIGHT
-        return own_score
+        except Exception:
+            avg_others = sum(other_scores) / max(len(other_scores), 1)
+            return own_score * OWN_WEIGHT + avg_others * OTHERS_WEIGHT
 
     def _variance(self, values: list[float]) -> float:
         """Calculate population variance.

@@ -17,6 +17,7 @@ MAX_QUESTIONS = 15
 PASS_THRESHOLD = 0.7
 INCONCLUSIVE_THRESHOLD = 0.4
 CONFIDENCE_SCALE = 1.1
+DEFAULT_MODEL = "claude-sonnet-4-20250514"
 
 
 class ChainOfVerification:
@@ -26,13 +27,20 @@ class ChainOfVerification:
     evaluates answer consistency, and synthesizes a final verdict.
     """
 
-    def __init__(self, client: object | None = None) -> None:
+    def __init__(self, client: object, model: str = DEFAULT_MODEL) -> None:
         """Initialize Chain of Verification.
 
         Args:
-            client: Anthropic client for LLM calls. None for testing.
+            client: Anthropic client for LLM calls.
+            model: Model ID for LLM calls.
         """
+        if client is None:
+            raise ValueError(
+                "ChainOfVerification requires an LLM client. "
+                "Provide a Claude CLI client or AsyncAnthropic instance."
+            )
         self._client = client
+        self._model = model
 
     async def verify(
         self, claim: VerificationClaim, context: str
@@ -65,18 +73,37 @@ class ChainOfVerification:
         Returns:
             List of verification questions.
         """
-        if self._client is None:
-            return [
-                f"Does the context support: {claim.content}?",
-                f"Is there evidence against: {claim.content}?",
-                f"Are there conditions where {claim.content} is false?",
-                "Is the claim internally consistent?",
-                "Does the claim align with known facts?",
+        try:
+            response = await self._client.messages.create(
+                model=self._model,
+                max_tokens=1024,
+                temperature=0.7,
+                system=(
+                    "Generate verification questions to check whether a claim "
+                    "is accurate. Output one question per line, numbered. "
+                    f"Generate between {MIN_QUESTIONS} and {MAX_QUESTIONS} questions."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"Claim: {claim.content}\n\n"
+                        f"Context:\n{context}"
+                    ),
+                }],
+            )
+            text = response.content[0].text.strip()
+            lines = [
+                ln.lstrip("0123456789.) ").strip()
+                for ln in text.splitlines()
+                if ln.strip() and any(c.isalpha() for c in ln)
             ]
-        return [
-            f"Question {i + 1} for: {claim.content}"
-            for i in range(MIN_QUESTIONS)
-        ]
+            if len(lines) >= MIN_QUESTIONS:
+                return lines[:MAX_QUESTIONS]
+            return self._fallback_questions(claim)
+        except (AttributeError, IndexError, TypeError):
+            return self._fallback_questions(claim)
+        except Exception:
+            return self._fallback_questions(claim)
 
     async def _answer_independently(
         self, questions: list[str], context: str
@@ -90,12 +117,31 @@ class ChainOfVerification:
         Returns:
             Independent answers for each question.
         """
-        if self._client is None:
-            return [
-                "Answer: Based on context, yes/partially."
-                for _ in questions
-            ]
-        return [f"Answer for: {q}" for q in questions]
+        answers: list[str] = []
+        for question in questions:
+            try:
+                response = await self._client.messages.create(
+                    model=self._model,
+                    max_tokens=512,
+                    temperature=0.3,
+                    system=(
+                        "Answer the verification question using ONLY the provided "
+                        "context. Be concise and factual."
+                    ),
+                    messages=[{
+                        "role": "user",
+                        "content": (
+                            f"Question: {question}\n\n"
+                            f"Context:\n{context}"
+                        ),
+                    }],
+                )
+                answers.append(response.content[0].text.strip())
+            except (AttributeError, IndexError, TypeError):
+                answers.append("Unable to evaluate this question.")
+            except Exception:
+                answers.append("Unable to evaluate this question.")
+        return answers
 
     async def _evaluate_answers(
         self,
@@ -113,9 +159,34 @@ class ChainOfVerification:
         Returns:
             Consistency scores for each question-answer pair.
         """
-        if self._client is None:
-            return [0.75] * len(questions)
-        return [0.7] * len(questions)
+        scores: list[float] = []
+        for question, answer in zip(questions, answers):
+            try:
+                response = await self._client.messages.create(
+                    model=self._model,
+                    max_tokens=50,
+                    temperature=0.1,
+                    system=(
+                        "Rate how well the answer supports the claim on a scale "
+                        "of 0.0 to 1.0. Respond with only a number."
+                    ),
+                    messages=[{
+                        "role": "user",
+                        "content": (
+                            f"Claim: {claim.content}\n"
+                            f"Question: {question}\n"
+                            f"Answer: {answer}"
+                        ),
+                    }],
+                )
+                text = response.content[0].text.strip()
+                score = float(text.split()[0].strip(".,;:"))
+                scores.append(max(0.0, min(1.0, score)))
+            except (AttributeError, IndexError, TypeError, ValueError):
+                scores.append(0.5)
+            except Exception:
+                scores.append(0.5)
+        return scores
 
     def _synthesize_verdict(
         self,
@@ -157,3 +228,21 @@ class ChainOfVerification:
                 f"Q{i + 1}: {e:.2f}" for i, e in enumerate(evaluations)
             ],
         )
+
+    @staticmethod
+    def _fallback_questions(claim: VerificationClaim) -> list[str]:
+        """Generate fallback verification questions when LLM fails.
+
+        Args:
+            claim: The claim to generate questions for.
+
+        Returns:
+            List of generic verification questions.
+        """
+        return [
+            f"Does the context support: {claim.content}?",
+            f"Is there evidence against: {claim.content}?",
+            f"Are there conditions where {claim.content} is false?",
+            "Is the claim internally consistent?",
+            "Does the claim align with known facts?",
+        ]
