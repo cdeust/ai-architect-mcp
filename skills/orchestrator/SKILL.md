@@ -20,6 +20,48 @@ NOT FOR: generating PRDs, writing code, running tests, verification, discovery s
 
 > "Which findings need processing, what stage is each one in, and what should run next?"
 
+## Cortex memory integration
+
+### At pipeline START — recall lessons from past runs
+
+**WHEN:** Immediately after loading session state and before executing any stage.
+**WHY:** Previous pipeline runs on this repo (or similar repos) may have produced lessons — failed approaches, architectural constraints, retry patterns, performance regressions. Starting blind when memory exists is a waste.
+**HOW:**
+
+```
+cortex:recall(query="pipeline lessons failures decisions for repo {target_repo}", limit=15)
+cortex:recall(query="pipeline retry patterns verification failures for {task_description}", limit=10)
+```
+
+If results are returned:
+- Check for known failure patterns that match the current task — avoid repeating them
+- Check for architectural decisions that constrain this run — respect them unless new evidence overrides
+- Check for optimization patterns — apply them to stage execution order or retry thresholds
+- Include relevant lessons in `upstream_context` under key `"cortex_lessons"` so downstream stages can access them
+
+If no results are returned: proceed normally — this is the first run for this context.
+
+### At pipeline END — store run outcomes
+
+**WHEN:** After all findings reach Stage 10 (or escalation), before cleanup.
+**WHY:** Future pipeline runs must learn from this run's decisions, failures, and successes. Without this, every run starts from zero.
+**HOW:**
+
+```
+cortex:remember(
+  content="Pipeline run on repo {target_repo}: task={task_description}, findings_processed={count}, stages_completed={list}, total_retries={sum}, final_compound_scores={scores}, key_decisions={decisions}, failure_patterns={failures}",
+  tags=["pipeline-run", "repo:{target_repo_name}", "task:{task_type}", "stage:orchestrator"]
+)
+```
+
+What to store:
+- Task description and repo name
+- Number of findings processed and their final status (delivered, escalated, blocked)
+- Total retry count across all 7-to-6 and 5-to-4 loops — high retry counts indicate systemic issues
+- Compound scores at key gates (Stage 4 PRD, Stage 7 verification)
+- Any escalations and their root cause
+- Lessons: what worked, what failed, what should be done differently next time
+
 ## Before you start
 
 0. Call `ai_architect_init_pipeline(target_repo_path="{target_repo}")` once to set session context for the target repository. This initializes the shared composition root and stage context with the correct `{data_dir}`.

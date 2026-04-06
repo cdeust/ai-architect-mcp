@@ -165,7 +165,27 @@ ai_architect_fs_write(
 )
 ```
 
-### 7. Update pipeline state (final)
+### 7. Store PR outcome in Cortex memory
+
+**WHEN:** After the PR is created and the sha256 manifest is written — before updating pipeline state.
+**WHY:** Future pipeline runs must know what was recently shipped for this repo. This prevents rediscovering findings that were already addressed, avoids contradicting recently merged changes, and provides a running history of what the pipeline has delivered.
+**HOW:**
+
+```
+cortex:remember(
+  content="PR delivered for finding {findingID} in repo {target_repo}: pr_url={pr_url}, branch=pipeline/{findingID}, summary={finding_summary}, impact_score={compound_impact_score}, hor_pass_rate={pass_count}/64, test_results={passed}/{total}, total_pipeline_retries={sum_of_all_retries}, key_changes={files_changed_summary}",
+  tags=["pr-delivered", "repo:{target_repo_name}", "finding:{findingID}", "stage:10"]
+)
+```
+
+What to store:
+- PR URL and branch name — enables future runs to check if a finding was already shipped
+- Finding summary and impact score — enables relevance comparison in Stage 1
+- HOR pass rate and test results — tracks pipeline quality over time
+- Total pipeline retries across all retry loops — high retry counts on specific finding types indicate areas where the pipeline struggles
+- Key files changed — prevents future findings from conflicting with recently modified code
+
+### 8. Update pipeline state (final)
 
 ```
 ai_architect_save_session_state(state_data={
