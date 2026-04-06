@@ -78,6 +78,23 @@ For each interface file:
   → Mark ports requiring modification
 ```
 
+### 1b. Git analytics enrichment (optional)
+
+If git analytics are available (from Stage 0 health report `git_analytics: "available"`):
+```
+ai_architect_codebase_dead_code(path="{affected_module}", repo="{target_repo}")
+→ Identify unreachable code candidates in the affected modules
+→ (Grove et al. 1997) — dead code in the integration zone is a cleanup opportunity
+→ Add dead code files to the file_change_manifest with change_type: "delete"
+→ Do NOT delete code that is only unreachable due to dynamic dispatch or reflection
+
+ai_architect_codebase_cochange(path="{affected_module}", repo="{target_repo}")
+→ Detect hidden dependencies not visible in import graphs
+→ (Gall et al. 1998) — files with high co-change frequency to affected ports are implicit dependencies
+→ If co-change confidence > 0.7 with an affected file: add to affected_ports even if no import edge exists
+→ These hidden dependencies must be included in the integration design to prevent silent breakage
+```
+
 ### 2. Design adapter changes per affected engine
 
 ```

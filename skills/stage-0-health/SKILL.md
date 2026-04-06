@@ -89,6 +89,15 @@ Available codebase intelligence tools (from `codebase-intelligence` MCP server):
 - `ai_architect_codebase_cypher(query, repo="")` — raw Cypher queries
 - `ai_architect_codebase_detect_changes(repo="", scope="unstaged", base_ref="")` — git diff to affected symbols
 
+Git analytics tools (science-backed, from `codebase-intelligence` MCP server):
+- `ai_architect_codebase_ownership(path, repo="")` — per-file ownership ratio and minor contributors (Bird et al. 2011, "Don't Touch My Code!")
+- `ai_architect_codebase_bus_factor(path, repo="")` — knowledge concentration risk per module (Avelino et al. 2016, "A Novel Approach for Estimating Truck Factors")
+- `ai_architect_codebase_churn(path, repo="")` — relative code churn: additions, deletions, churn ratio (Nagappan & Ball 2005, "Use of Relative Code Churn Measures to Predict System Defect Density")
+- `ai_architect_codebase_cochange(path, repo="")` — co-change frequency detecting hidden temporal coupling (Gall et al. 1998, "Detection of Logical Coupling Based on Product Release History")
+- `ai_architect_codebase_dead_code(path, repo="")` — unreachable code candidates via call graph analysis (Grove et al. 1997, "Call Graph Construction in Object-Oriented Languages")
+
+Probe each git analytics tool with a known path. If any responds: record `git_analytics: "available"` in the health report. If all fail or timeout: record `git_analytics: "unavailable"` — downstream stages skip analytics enrichment.
+
 ### 5. Foundation Models reachability (optional)
 
 Foundation Models availability is checked but not blocking. Pipeline continues if Foundation Models is offline — Apple Intelligence features degrade gracefully.
@@ -106,6 +115,7 @@ ai_architect_save_context(
     "git": "operational",
     "github": "authenticated",
     "foundation_models": true/false,
+    "git_analytics": "available"/"unavailable",
     "timestamp": "{ISO8601}"
   }
 )
@@ -161,7 +171,7 @@ ai_architect_emit_ooda_checkpoint(stage_id=0, phase="decide", decision="Health r
 
 | Artifact | Location | Schema |
 |----------|----------|--------|
-| `stage-0-health-report.json` | `{data_dir}/artifacts/` | `{mcp_server, tool_groups, skill_versions, git, github, foundation_models, timestamp}` |
+| `stage-0-health-report.json` | `{data_dir}/artifacts/` | `{mcp_server, tool_groups, skill_versions, git, github, foundation_models, git_analytics, timestamp}` |
 | StageContext[stage-0] | `ai_architect_save_context` | Same as report |
 | PipelineState update | `ai_architect_save_session_state` | `{currentStage: 1}` |
 

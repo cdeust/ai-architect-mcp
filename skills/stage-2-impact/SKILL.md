@@ -67,6 +67,21 @@ ai_architect_codebase_impact(
 → More accurate than filesystem scanning for large codebases
 ```
 
+If git analytics are available (from Stage 0 health report `git_analytics: "available"`):
+```
+ai_architect_codebase_ownership(path="{affected_file}", repo="{target_repo}")
+→ Per-file ownership ratio and minor contributor count
+→ (Bird et al. 2011) — files with ownership < 0.5 have diffuse responsibility = higher defect risk
+→ If ownership < 0.5 for any affected file: flag as HIGH risk in perspective_scores
+
+ai_architect_codebase_bus_factor(path="{affected_module}", repo="{target_repo}")
+→ Knowledge concentration: how many contributors must leave before knowledge is lost
+→ (Avelino et al. 2016) — bus_factor <= 2 means critical knowledge concentration
+→ If bus_factor <= 2 for any affected module: flag as HIGH risk, add to cascade_points
+```
+
+Risk escalation rule: if a file in the propagation path has ownership < 0.5 OR bus_factor <= 2, increase the maintainability perspective score by 0.2 (capped at 1.0). Document the rationale in the impact map artifact under a `git_analytics_flags` field.
+
 ### 2. Run Collaborative Inference (Algorithm 8)
 
 Multiple perspectives analyze the finding's impact:

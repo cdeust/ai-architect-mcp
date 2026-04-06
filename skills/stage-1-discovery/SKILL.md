@@ -62,6 +62,18 @@ ai_architect_codebase_query(query="{finding_keywords}", repo="{target_repo}")
 → Enriches findings with structural context
 ```
 
+If git analytics are available (from Stage 0 health report `git_analytics: "available"`):
+```
+ai_architect_codebase_churn(path="{source_directory}", repo="{target_repo}")
+→ Identify high-churn files — areas with frequent changes correlate with defect density
+→ (Nagappan & Ball 2005) — findings in high-churn areas get relevance boost (+0.1)
+
+ai_architect_codebase_cochange(path="{source_directory}", repo="{target_repo}")
+→ Detect temporal coupling — files that change together but have no import relationship
+→ (Gall et al. 1998) — hidden coupling reveals implicit dependencies worth surfacing as findings
+→ If two files co-change frequently but share no import edge, create a finding for hidden coupling
+```
+
 Six adapter types (CombinedIngestionAdapter routes automatically):
 - `TechnicalVeilIngestionAdapter` — YAML format (TechnicalVeil schema)
 - `YAMLFindingsAdapter` — generic YAML findings

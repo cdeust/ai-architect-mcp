@@ -138,6 +138,21 @@ ai_architect_fuse_confidence(
 → Returns FusedConfidence with point estimate, lower/upper bounds
 ```
 
+### 7b. Git analytics churn check (optional)
+
+If git analytics are available (from Stage 0 health report `git_analytics: "available"`) and the PRD references specific files in its file_change_manifest:
+```
+ai_architect_codebase_churn(path="{modified_file}", repo="{target_repo}")
+→ Relative code churn: additions, deletions, churn ratio per file
+→ (Nagappan & Ball 2005) — files in the top 10% by relative_churn have 2-4x higher defect density
+→ For each file in the PRD's file_change_manifest:
+  - If relative_churn is in the top 10%: flag as HIGH_CHURN
+  - HIGH_CHURN files require: (a) additional acceptance criteria covering regression,
+    (b) explicit test coverage requirements in the PRD, (c) a note in the review report
+→ If any HIGH_CHURN file lacks regression acceptance criteria: reduce compound score by 0.05 per file
+→ Record churn flags in the verification report under a `churn_analysis` field
+```
+
 ### 8. Decision: pass or loop
 
 **If compound score ≥ threshold:**
