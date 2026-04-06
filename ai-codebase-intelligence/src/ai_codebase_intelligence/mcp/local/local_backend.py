@@ -1,4 +1,4 @@
-"""Local backend — 1:1 port of gitnexus mcp/local/local-backend.js (init, resolve, dispatch)."""
+"""Local backend (init, resolve, dispatch)."""
 from __future__ import annotations
 
 import os

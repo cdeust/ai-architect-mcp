@@ -1,4 +1,4 @@
-"""Augment CLI command — 1:1 port of gitnexus cli/augment.js."""
+"""Augment CLI command."""
 from __future__ import annotations
 
 import os

@@ -1,4 +1,4 @@
-"""MCP Tool definitions — 1:1 port of gitnexus mcp/tools.js."""
+"""MCP Tool definitions."""
 from __future__ import annotations
 
 TOOLS = [

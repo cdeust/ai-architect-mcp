@@ -1,4 +1,4 @@
-"""CLI entry point — 1:1 port of gitnexus cli/index.js."""
+"""CLI entry point."""
 from __future__ import annotations
 
 import sys

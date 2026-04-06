@@ -1,4 +1,4 @@
-"""Wiki generator — port of gitnexus core/wiki/generator.js (core orchestrator)."""
+"""Wiki generator (core orchestrator)."""
 from __future__ import annotations
 
 import json

@@ -6,11 +6,11 @@ import stat
 from pathlib import Path
 from typing import Any
 
-GITNEXUS_DIR = ".gitnexus"
+STORAGE_DIR = ".codebase-intelligence"
 
 
 def get_storage_path(repo_path: str) -> str:
-    return os.path.join(os.path.abspath(repo_path), GITNEXUS_DIR)
+    return os.path.join(os.path.abspath(repo_path), STORAGE_DIR)
 
 
 def get_storage_paths(repo_path: str) -> dict[str, str]:
@@ -74,22 +74,22 @@ def add_to_gitignore(repo_path: str) -> None:
     try:
         with open(gitignore_path, encoding="utf-8") as f:
             content = f.read()
-        if GITNEXUS_DIR in content:
+        if STORAGE_DIR in content:
             return
         new_content = (
-            f"{content}{GITNEXUS_DIR}\n"
+            f"{content}{STORAGE_DIR}\n"
             if content.endswith("\n")
-            else f"{content}\n{GITNEXUS_DIR}\n"
+            else f"{content}\n{STORAGE_DIR}\n"
         )
         with open(gitignore_path, "w", encoding="utf-8") as f:
             f.write(new_content)
     except OSError:
         with open(gitignore_path, "w", encoding="utf-8") as f:
-            f.write(f"{GITNEXUS_DIR}\n")
+            f.write(f"{STORAGE_DIR}\n")
 
 
 def get_global_dir() -> str:
-    return os.path.join(str(Path.home()), ".gitnexus")
+    return os.path.join(str(Path.home()), ".codebase-intelligence")
 
 
 def get_global_registry_path() -> str:

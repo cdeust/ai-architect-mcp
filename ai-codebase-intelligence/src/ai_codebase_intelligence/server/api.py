@@ -1,4 +1,4 @@
-"""HTTP API server — 1:1 port of gitnexus server/api.js (minimal)."""
+"""HTTP API server (minimal)."""
 from __future__ import annotations
 
 import json

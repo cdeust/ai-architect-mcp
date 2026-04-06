@@ -1,4 +1,4 @@
-"""Sequential parsing fallback — 1:1 port of gitnexus processParsingSequential."""
+"""Sequential parsing fallback."""
 from __future__ import annotations
 
 from typing import Any, Callable

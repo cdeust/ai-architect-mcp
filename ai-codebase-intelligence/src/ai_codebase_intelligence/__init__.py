@@ -1,3 +1,3 @@
-"""AI Codebase Intelligence — 1:1 Python port of gitnexus."""
+"""AI Codebase Intelligence — Python codebase intelligence engine."""
 from __future__ import annotations
 __version__ = "0.1.0"

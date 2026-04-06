@@ -1,4 +1,4 @@
-"""MCP over HTTP — 1:1 port of gitnexus server/mcp-http.js.
+"""MCP over HTTP transport.
 
 Manages stateful sessions with TTL eviction. In Python we use a
 simple dict since there's no concurrent access (GIL).

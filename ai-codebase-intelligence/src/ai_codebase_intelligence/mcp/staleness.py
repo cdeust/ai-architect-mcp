@@ -1,4 +1,4 @@
-"""Staleness check — 1:1 port of gitnexus mcp/staleness.js."""
+"""Staleness check."""
 from __future__ import annotations
 
 import subprocess

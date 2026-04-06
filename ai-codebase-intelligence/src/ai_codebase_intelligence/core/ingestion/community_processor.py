@@ -1,4 +1,4 @@
-"""Community detection — 1:1 port of gitnexus community-processor.js."""
+"""Community detection."""
 from __future__ import annotations
 
 from typing import Any, Callable

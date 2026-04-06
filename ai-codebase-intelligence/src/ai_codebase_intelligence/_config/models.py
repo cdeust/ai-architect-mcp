@@ -3,8 +3,8 @@
 Each section maps to a TOML table in defaults.toml. Environment
 variables override with CI_ prefix (CI_INDEXING_MAX_FILE_SIZE_BYTES).
 
-OBSERVATION: gitnexus hardcodes constants across 15+ files — CHUNK_BYTE_BUDGET
-  in pipeline.js, MAX_FILE_SIZE in filesystem-walker.js, RRF_K in hybrid-search.js.
+OBSERVATION: Hardcoding constants across multiple modules makes them
+  difficult to audit and tune (CHUNK_BYTE_BUDGET, MAX_FILE_SIZE, RRF_K).
 PROBLEM: Changing one constant requires grep across the entire codebase.
   No validation — typos silently produce wrong behavior.
 SOLUTION: Single TOML config file + Pydantic models with Field validation.
@@ -125,7 +125,7 @@ class StorageSection(BaseModel):
         description="SQLite database filename inside storage directory",
     )
     storage_dir: str = Field(
-        default=".gitnexus",
+        default=".codebase-intelligence",
         description="Storage directory name created inside the indexed repo",
     )
 

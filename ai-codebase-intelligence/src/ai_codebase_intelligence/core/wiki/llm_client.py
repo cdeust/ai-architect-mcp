@@ -1,4 +1,4 @@
-"""LLM client — 1:1 port of gitnexus core/wiki/llm-client.js.
+"""LLM client for wiki generation.
 
 OpenAI-compatible API client. Supports OpenAI, Azure, LiteLLM, Ollama.
 """

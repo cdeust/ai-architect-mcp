@@ -1,4 +1,4 @@
-"""Clean command — 1:1 port of gitnexus cli/clean.js."""
+"""Clean command."""
 from __future__ import annotations
 
 import os

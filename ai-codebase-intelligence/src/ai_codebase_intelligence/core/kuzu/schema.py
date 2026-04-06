@@ -1,4 +1,4 @@
-"""KuzuDB Schema — 1:1 port of gitnexus core/kuzu/schema.js."""
+"""KuzuDB Schema."""
 from __future__ import annotations
 
 NODE_TABLES = [

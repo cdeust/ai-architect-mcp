@@ -1,4 +1,4 @@
-"""Wiki prompt templates — 1:1 port of gitnexus core/wiki/prompts.js."""
+"""Wiki prompt templates."""
 from __future__ import annotations
 
 from typing import Any

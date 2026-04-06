@@ -1,0 +1,196 @@
+{
+  "finding_id": "FIND-001",
+  "stage_id": 45,
+  "dimension_scores": [
+    {
+      "dimension_type": "D1_SECTIONS_PRESENT",
+      "dimension_name": "Sections Present",
+      "score": 0.0,
+      "passed": false,
+      "findings": [
+        "Missing required section: 'Overview'",
+        "Missing required section: 'Requirements'",
+        "Missing required section: 'User Stories'",
+        "Missing required section: 'Technical'",
+        "Missing required section: 'Acceptance'",
+        "Missing required section: 'Roadmap'",
+        "Missing required section: 'Testing'"
+      ]
+    },
+    {
+      "dimension_type": "D2_HEADER_FORMAT",
+      "dimension_name": "Header Format",
+      "score": 0.0,
+      "passed": false,
+      "findings": [
+        "Malformed header: '# Acceptance Criteria'",
+        "Malformed header: '### AC-001: Cache hit returns identical response (tests FR-001)'",
+        "Malformed header: '### AC-002: LRU eviction works at boundary (tests FR-002)'",
+        "Malformed header: '### AC-003: High-temperature calls bypass cache (tests FR-003)'",
+        "Malformed header: '### AC-004: Independent instances (tests FR-004)'",
+        "Malformed header: '### AC-005: Statistics accurate (tests FR-005)'",
+        "Malformed header: '### AC-006: NEEDS-RUNTIME memory bound (tests NFR-001)'",
+        "Malformed header: '# JIRA Export'",
+        "Malformed header: '## Epic: FIND-001 \u2014 LRU Cache for LLM Calls'",
+        "Malformed header: '### Task: FIND-001-T1 \u2014 Implement LLMResponseCache'",
+        "Malformed header: '### Task: FIND-001-T2 \u2014 Integrate cache into SamplingClient'",
+        "Malformed header: '### Task: FIND-001-T3 \u2014 Add observability for cache stats'",
+        "Malformed header: '### Task: FIND-001-T4 \u2014 Write tests'",
+        "Malformed header: '# PRD: LRU Cache for Prompting Algorithm LLM Calls'",
+        "Malformed header: '## Finding: FIND-001'",
+        "Malformed header: '## Status: Draft'",
+        "Malformed header: '## Priority: High'",
+        "Malformed header: '## Compound Impact Score: 0.834'",
+        "Malformed header: '# Requirements'",
+        "Malformed header: '### FR-001: Cache LLM responses by content hash'",
+        "Malformed header: '### FR-002: LRU eviction at configurable bound'",
+        "Malformed header: '### FR-003: Skip caching for high-temperature calls'",
+        "Malformed header: '### FR-004: Per-instance cache scope'",
+        "Malformed header: '### FR-005: Cache statistics'",
+        "Malformed header: '## Non-Functional Requirements'",
+        "Malformed header: '### NFR-001: Memory bound'",
+        "Malformed header: '### NFR-002: Zero-overhead cache miss'",
+        "Malformed header: '### NFR-003: No API change'",
+        "Malformed header: '## NEEDS-RUNTIME: NFR-001 memory bound needs production measurement'",
+        "Malformed header: '# Roadmap'",
+        "Malformed header: '## Phase 1: Core Cache (this PR)'",
+        "Malformed header: '## Phase 2: Tuning (future)'",
+        "Malformed header: '# Technical Specification'",
+        "Malformed header: '## Implementation: `_adapters/llm_cache.py`'",
+        "Malformed header: '## Modified: `_adapters/sampling_client.py`'",
+        "Malformed header: '# Test Plan'",
+        "Malformed header: '### UT-001: test_cache_hit_returns_same_response (verifies AC-001)'",
+        "Malformed header: '### UT-002: test_lru_eviction_at_capacity (verifies AC-002)'",
+        "Malformed header: '### UT-003: test_high_temperature_bypasses_cache (verifies AC-003)'",
+        "Malformed header: '### UT-004: test_independent_instances (verifies AC-004)'",
+        "Malformed header: '### UT-005: test_stats_tracking (verifies AC-005)'",
+        "Malformed header: '### UT-006: NEEDS-RUNTIME test_memory_bound (verifies AC-006)'",
+        "Malformed header: '# User Stories'",
+        "Malformed header: '### STORY-001: Pipeline operator experiences faster retries'",
+        "Malformed header: '### STORY-002: Developer adds cache without touching algorithms'",
+        "Malformed header: '### STORY-003: Observer monitors cache effectiveness'",
+        "Malformed header: '# Verification Report'",
+        "Malformed header: '## NEEDS-RUNTIME Verdicts'"
+      ]
+    },
+    {
+      "dimension_type": "D3_ID_CONSISTENCY",
+      "dimension_name": "ID Consistency",
+      "score": 0.3469387755102041,
+      "passed": false,
+      "findings": [
+        "Duplicate identifier: 'FR-001'",
+        "Duplicate identifier: 'FR-002'",
+        "Duplicate identifier: 'FR-003'",
+        "Duplicate identifier: 'FR-004'",
+        "Duplicate identifier: 'FR-005'",
+        "Duplicate identifier: 'NFR-001'",
+        "Duplicate identifier: 'NFR-001'",
+        "Duplicate identifier: 'AC-001'",
+        "Duplicate identifier: 'AC-002'",
+        "Duplicate identifier: 'AC-003'",
+        "Duplicate identifier: 'AC-004'",
+        "Duplicate identifier: 'AC-005'",
+        "Duplicate identifier: 'AC-006'",
+        "Duplicate identifier: 'FR-001'",
+        "Duplicate identifier: 'AC-001'",
+        "Duplicate identifier: 'STORY-001'",
+        "Duplicate identifier: 'FR-002'",
+        "Duplicate identifier: 'AC-002'",
+        "Duplicate identifier: 'STORY-001'",
+        "Duplicate identifier: 'FR-003'",
+        "Duplicate identifier: 'AC-003'",
+        "Duplicate identifier: 'STORY-001'",
+        "Duplicate identifier: 'FR-004'",
+        "Duplicate identifier: 'AC-004'",
+        "Duplicate identifier: 'STORY-002'",
+        "Duplicate identifier: 'FR-005'",
+        "Duplicate identifier: 'AC-005'",
+        "Duplicate identifier: 'STORY-003'",
+        "Duplicate identifier: 'NFR-001'",
+        "Duplicate identifier: 'AC-006'",
+        "Duplicate identifier: 'STORY-001'",
+        "Duplicate identifier: 'AC-006'"
+      ]
+    },
+    {
+      "dimension_type": "D4_OUTLINE_FLOW",
+      "dimension_name": "Outline Flow",
+      "score": 0.0,
+      "passed": false,
+      "findings": [
+        "No recognised sections found in content"
+      ]
+    },
+    {
+      "dimension_type": "D5_ARTIFACT_COHERENCE",
+      "dimension_name": "Artifact Coherence",
+      "score": 0.0,
+      "passed": false,
+      "findings": [
+        "Only 0/9 terms referenced across sections"
+      ]
+    },
+    {
+      "dimension_type": "D6_CLARITY_LEVEL",
+      "dimension_name": "Clarity Level",
+      "score": 1.0,
+      "passed": true,
+      "findings": []
+    },
+    {
+      "dimension_type": "D7_STAKEHOLDER_ALIGNMENT",
+      "dimension_name": "Stakeholder Alignment",
+      "score": 0.0,
+      "passed": false,
+      "findings": [
+        "Story missing stakeholder reference: 'STORY-001: Pipeline operator experiences faster retries'",
+        "Story missing stakeholder reference: 'STORY-002: Developer adds cache without touching algorithms'",
+        "Story missing stakeholder reference: 'STORY-003: Observer monitors cache effectiveness'",
+        "Story missing stakeholder reference: 'STORY-001 |'",
+        "Story missing stakeholder reference: 'STORY-001 |'",
+        "Story missing stakeholder reference: 'STORY-001 |'",
+        "Story missing stakeholder reference: 'STORY-002 |'",
+        "Story missing stakeholder reference: 'STORY-003 |'",
+        "Story missing stakeholder reference: 'STORY-001 |'"
+      ]
+    },
+    {
+      "dimension_type": "D8_REQUIREMENT_PRECISION",
+      "dimension_name": "Requirement Precision",
+      "score": 0.4,
+      "passed": false,
+      "findings": [
+        "Requirement lacks measurable criteria: 'Cache LLM responses by content hash'",
+        "Requirement lacks measurable criteria: 'LRU eviction at configurable bound'",
+        "Requirement lacks measurable criteria: 'Skip caching for high-temperature calls'",
+        "Requirement lacks measurable criteria: 'Per-instance cache scope'",
+        "Requirement lacks measurable criteria: 'Cache statistics'",
+        "Requirement lacks measurable criteria: 'Memory bound'",
+        "Requirement lacks measurable criteria: 'Zero-overhead cache miss'",
+        "Requirement lacks measurable criteria: 'No API change'",
+        "Requirement lacks measurable criteria: 'memory bound needs production measurement'"
+      ]
+    },
+    {
+      "dimension_type": "D9_ASSUMPTION_VALIDATION",
+      "dimension_name": "Assumption Validation",
+      "score": 0.0,
+      "passed": false,
+      "findings": [
+        "No 'Assumptions' section found in artifact"
+      ]
+    },
+    {
+      "dimension_type": "D10_SUCCESS_METRICS",
+      "dimension_name": "Success Metrics",
+      "score": 0.0,
+      "passed": false,
+      "findings": [
+        "No 'Metrics' or 'Success Metrics' section found"
+      ]
+    }
+  ],
+  "gate_decision": "REJECTED",
+  "created_at": "2026-03-27T23:40:41.762165Z"
+}

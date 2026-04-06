@@ -1,4 +1,4 @@
-"""Cluster enricher — 1:1 port of gitnexus cluster-enricher.js."""
+"""Cluster enricher."""
 from __future__ import annotations
 
 import json

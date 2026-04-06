@@ -1,0 +1,142 @@
+{
+  "stage": 4,
+  "finding_id": "FIND-001",
+  "prd_files": [
+    "prd-acceptance.md",
+    "prd-jira.md",
+    "prd-overview.md",
+    "prd-requirements.md",
+    "prd-roadmap.md",
+    "prd-technical.md",
+    "prd-tests.md",
+    "prd-user-stories.md",
+    "prd-verification.md"
+  ],
+  "hor_results": {
+    "total_rules": 64,
+    "passed": 49,
+    "failed": 15,
+    "adjusted_score": 0.0,
+    "failures": [
+      {
+        "rule_id": 1,
+        "rule_name": "title_exists",
+        "category": "structural",
+        "message": "Title is missing or empty",
+        "severity": "critical"
+      },
+      {
+        "rule_id": 2,
+        "rule_name": "sections_present",
+        "category": "structural",
+        "message": "Missing sections: Overview, Requirements, User Stories, Technical, Acceptance, Roadmap, Testing",
+        "severity": "critical"
+      },
+      {
+        "rule_id": 3,
+        "rule_name": "ac_numbering",
+        "category": "structural",
+        "message": "AC numbering has gaps: found [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 6], expected [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]",
+        "severity": "warning"
+      },
+      {
+        "rule_id": 10,
+        "rule_name": "verification_metrics_disclaimer",
+        "category": "structural",
+        "message": "Metrics found without projected/estimated disclaimer",
+        "severity": "warning"
+      },
+      {
+        "rule_id": 13,
+        "rule_name": "self_check_reported",
+        "category": "structural_extended",
+        "message": "Post-generation self-check results missing",
+        "severity": "warning"
+      },
+      {
+        "rule_id": 23,
+        "rule_name": "toc_present",
+        "category": "structural_extended",
+        "message": "Document has 5+ sections but no table of contents",
+        "severity": "warning"
+      },
+      {
+        "rule_id": 30,
+        "rule_name": "solid_compliance",
+        "category": "architecture",
+        "message": "SOLID principles not addressed: srp, ocp, lsp, isp, dip",
+        "severity": "warning"
+      },
+      {
+        "rule_id": 33,
+        "rule_name": "auth_requirements",
+        "category": "security",
+        "message": "API/service defined without authentication/authorization requirements",
+        "severity": "critical"
+      },
+      {
+        "rule_id": 38,
+        "rule_name": "data_residency",
+        "category": "security",
+        "message": "Data storage without location/residency documentation",
+        "severity": "warning"
+      },
+      {
+        "rule_id": 41,
+        "rule_name": "timeout_handling",
+        "category": "resilience",
+        "message": "External operations without timeout handling",
+        "severity": "warning"
+      },
+      {
+        "rule_id": 45,
+        "rule_name": "atomicity",
+        "category": "resilience",
+        "message": "State mutations without atomicity guarantees",
+        "severity": "warning"
+      },
+      {
+        "rule_id": 51,
+        "rule_name": "documentation",
+        "category": "quality",
+        "message": "Public API without documentation requirements",
+        "severity": "warning"
+      },
+      {
+        "rule_id": 56,
+        "rule_name": "performance_testing",
+        "category": "quality",
+        "message": "Performance requirements without test methodology",
+        "severity": "warning"
+      },
+      {
+        "rule_id": 59,
+        "rule_name": "logging_strategy",
+        "category": "observability",
+        "message": "Service without logging strategy",
+        "severity": "warning"
+      },
+      {
+        "rule_id": 64,
+        "rule_name": "vulnerability_scanning",
+        "category": "observability",
+        "message": "CI/CD without security/vulnerability scanning",
+        "severity": "warning"
+      }
+    ]
+  },
+  "compound_score": {
+    "relevance": 0.82,
+    "uniqueness": 0.65,
+    "impact": 0.78,
+    "confidence": 0.0,
+    "weighted_total": 0.61,
+    "weights": {
+      "relevance": 0.3,
+      "uniqueness": 0.2,
+      "impact": 0.3,
+      "confidence": 0.2
+    }
+  },
+  "status": "NEEDS_REVIEW"
+}

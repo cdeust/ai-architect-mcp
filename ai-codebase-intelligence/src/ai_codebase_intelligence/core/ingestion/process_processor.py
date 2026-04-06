@@ -1,4 +1,4 @@
-"""Process detection — 1:1 port of gitnexus process-processor.js."""
+"""Process detection."""
 from __future__ import annotations
 
 import re

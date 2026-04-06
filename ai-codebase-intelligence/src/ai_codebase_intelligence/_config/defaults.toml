@@ -32,4 +32,4 @@ default_min_confidence = 0.0        # Default confidence filter
 
 [storage]
 db_filename = "index.db"            # SQLite database filename
-storage_dir = ".gitnexus"           # Storage directory name inside repo
+storage_dir = ".codebase-intelligence"  # Storage directory name inside repo

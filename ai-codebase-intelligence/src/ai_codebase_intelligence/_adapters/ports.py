@@ -7,8 +7,8 @@ never on concrete adapters (SQLite, tree-sitter, git).
 Concrete adapters implement these ports and are injected at the
 composition root. Tests inject in-memory doubles.
 
-OBSERVATION: gitnexus coupled graph DB, search, and parsing into
-  monolithic modules. Every KuzuDB API change broke the pipeline.
+OBSERVATION: the legacy implementation coupled graph DB, search, and
+  parsing into monolithic modules. Every KuzuDB API change broke the pipeline.
 PROBLEM: Tight coupling to KuzuDB caused crashes on extension loading,
   schema migration, and stale directory state across 5+ sessions.
 SOLUTION: Hexagonal architecture with port interfaces. Storage,

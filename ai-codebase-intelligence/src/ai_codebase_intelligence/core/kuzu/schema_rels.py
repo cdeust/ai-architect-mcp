@@ -1,4 +1,4 @@
-"""CodeRelation table — identical to gitnexus schema.js lines 176-356."""
+"""CodeRelation table definition."""
 from __future__ import annotations
 
 RELATION_SCHEMA = """CREATE REL TABLE CodeRelation (

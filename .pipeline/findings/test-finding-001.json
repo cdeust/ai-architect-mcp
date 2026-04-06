@@ -1,0 +1,25 @@
+{
+  "findings": [
+    {
+      "id": "FIND-001",
+      "title": "Add LRU caching to prompting algorithm LLM calls",
+      "description": "All 5 prompting algorithms (TRM Refinement, Adaptive Expansion, Metacognitive Monitor, Signal-Aware Thought Buffer, Collaborative Inference) make redundant LLM calls when processing similar prompts within the same pipeline run. For example, during a Stage 4 PRD generation with 3 retries, the same confidence evaluation calls are repeated with identical inputs. Each LLM call costs ~2-5 seconds via CLI and consumes tokens via API. A shared LRU cache keyed on (prompt_hash, context_hash, model) across all algorithms would eliminate redundant calls. Cache should be per-session, bounded (max 128 entries), invalidated on model change, and transparent to algorithms (decorator pattern).",
+      "category": "performance",
+      "priority": "high",
+      "source": "pipeline-analysis-2026-03-28",
+      "affected_modules": [
+        "mcp/ai_architect_mcp/_prompting/algorithms/trm_refinement.py",
+        "mcp/ai_architect_mcp/_prompting/algorithms/adaptive_expansion.py",
+        "mcp/ai_architect_mcp/_prompting/algorithms/metacognitive.py",
+        "mcp/ai_architect_mcp/_prompting/algorithms/thought_buffer.py",
+        "mcp/ai_architect_mcp/_prompting/algorithms/collaborative_inference.py",
+        "mcp/ai_architect_mcp/_adapters/sampling_client.py"
+      ],
+      "evidence": [
+        "3 retry cycles * 5 confidence evaluations each = 15 redundant LLM calls per finding",
+        "Average CLI LLM call latency: 3.2 seconds (measured over 100 calls)",
+        "Estimated time savings per finding: 48 seconds (15 * 3.2s)"
+      ]
+    }
+  ]
+}

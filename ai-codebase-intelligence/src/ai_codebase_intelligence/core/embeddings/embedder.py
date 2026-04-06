@@ -1,7 +1,7 @@
-"""Embedder — 1:1 port of gitnexus core/embeddings/embedder.js.
+"""Embedder — core embedding implementation.
 
-Uses sentence-transformers (Python) instead of transformers.js (Node).
-Optional dependency — degrades gracefully if not installed.
+Uses sentence-transformers. Optional dependency — degrades gracefully
+if not installed.
 """
 from __future__ import annotations
 

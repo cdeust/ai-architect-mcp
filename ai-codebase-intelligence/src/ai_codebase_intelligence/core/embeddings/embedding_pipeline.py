@@ -1,4 +1,4 @@
-"""Embedding pipeline — 1:1 port of gitnexus core/embeddings/embedding-pipeline.js."""
+"""Embedding pipeline."""
 from __future__ import annotations
 
 import logging

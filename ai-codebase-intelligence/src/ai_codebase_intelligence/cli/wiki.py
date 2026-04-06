@@ -1,4 +1,4 @@
-"""Wiki command — 1:1 port of gitnexus cli/wiki.js."""
+"""Wiki command."""
 from __future__ import annotations
 
 import os

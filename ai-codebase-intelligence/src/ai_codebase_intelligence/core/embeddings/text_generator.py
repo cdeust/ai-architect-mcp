@@ -1,4 +1,4 @@
-"""Text generator — 1:1 port of gitnexus core/embeddings/text-generator.js."""
+"""Text generator."""
 from __future__ import annotations
 
 from typing import Any

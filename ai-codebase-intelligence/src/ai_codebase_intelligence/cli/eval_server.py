@@ -1,4 +1,4 @@
-"""Eval server — 1:1 port of gitnexus cli/eval-server.js.
+"""Eval server.
 
 Lightweight HTTP server for SWE-bench evaluation. Exposes tool
 calls via POST /tool/:name with JSON body.

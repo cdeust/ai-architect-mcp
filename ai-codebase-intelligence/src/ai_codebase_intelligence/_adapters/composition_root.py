@@ -3,11 +3,10 @@
 The ONE place where concrete adapter types are instantiated.
 All other code depends only on port interfaces, never on concrete adapters.
 
-OBSERVATION: gitnexus instantiates KuzuDB, FTS, and tree-sitter directly
-  in 8+ modules. Swapping storage requires editing every module.
-PROBLEM: When KuzuDB broke (v0.11 API changes, extension failures),
-  fixes required changes across kuzu-adapter, bm25-index, local-backend,
-  all tool implementations, and the pipeline orchestrator.
+OBSERVATION: Directly instantiating KuzuDB, FTS, and tree-sitter in
+  multiple modules couples the pipeline to specific storage backends.
+PROBLEM: Backend changes cascade across adapter, bm25-index,
+  local-backend, tool implementations, and the pipeline orchestrator.
 SOLUTION: Single composition root creates all adapters. Tool code,
   pipeline, and search depend only on GraphStoragePort / SearchPort /
   ParserPort. Swapping SQLite→DuckDB→KuzuDB means changing ONE file.
@@ -48,7 +47,7 @@ class CompositionRoot:
 
     @property
     def storage_path(self) -> str:
-        """Absolute path to the .gitnexus storage directory."""
+        """Absolute path to the .codebase-intelligence storage directory."""
         return os.path.join(self._repo_path, self._config.storage.storage_dir)
 
     @property

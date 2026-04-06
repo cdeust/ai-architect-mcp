@@ -1,4 +1,4 @@
-"""KuzuDB connection pool for MCP server — port of gitnexus mcp/core/kuzu-adapter.js.
+"""KuzuDB connection pool for the MCP server.
 
 Python is single-threaded (GIL), so we use a simple single-connection
 per repo approach instead of a multi-connection pool.

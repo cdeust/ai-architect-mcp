@@ -1,4 +1,4 @@
-"""KuzuDB adapter — 1:1 port of gitnexus core/kuzu/kuzu-adapter.js.
+"""KuzuDB adapter.
 
 Single CodeRelation table. CSV bulk loading. FTS extension management.
 """
@@ -57,7 +57,7 @@ class KuzuAdapter:
             pass
 
     async def store_graph(self, graph: KnowledgeGraph) -> dict[str, Any]:
-        """Bulk load a KnowledgeGraph via CSV COPY — identical to gitnexus loadGraphToKuzu."""
+        """Bulk load a KnowledgeGraph via CSV COPY."""
         if not self._conn:
             raise RuntimeError("KuzuDB not initialized")
 

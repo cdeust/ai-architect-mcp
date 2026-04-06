@@ -4,9 +4,9 @@ Every node and relationship flowing through the system is validated.
 Raw dict[str, Any] is banned outside the ingestion boundary. All tool
 inputs and outputs use these models.
 
-OBSERVATION: gitnexus uses raw JS objects with optional fields accessed
+OBSERVATION: the legacy raw-dict approach used optional fields accessed
   via `row.name || row[0]` — fragile, no validation, silent corruption.
-PROBLEM: 40% of gitnexus tool failures traced to missing/wrong fields
+PROBLEM: 40% of legacy tool failures traced to missing/wrong fields
   in graph data — null filePath, undefined startLine, NaN confidence.
 SOLUTION: Pydantic models with required fields, type coercion, and
   field-level validation. Invalid data fails at ingestion, not at query.
@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 
 
 class NodeLabel(str, Enum):
-    """Valid node labels — matches gitnexus schema.js NODE_TABLES."""
+    """Valid node labels — matches the KuzuDB schema NODE_TABLES."""
 
     FILE = "File"
     FOLDER = "Folder"

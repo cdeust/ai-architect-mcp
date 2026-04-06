@@ -1,0 +1,10 @@
+{
+  "stage": 5,
+  "finding_id": "FIND-001",
+  "hor_passed_ratio": 0.7656,
+  "interview_mean_score": 0.1747,
+  "review_score": 0.5293,
+  "decision": "NEEDS_REVISION",
+  "note": "Test pipeline \u2014 PRD was hand-crafted, not ai-prd-generator output",
+  "timestamp": "2026-03-27T23:41:56.107748+00:00"
+}

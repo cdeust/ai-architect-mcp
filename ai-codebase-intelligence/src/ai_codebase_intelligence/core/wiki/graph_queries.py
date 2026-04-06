@@ -1,4 +1,4 @@
-"""Graph queries for wiki generation — 1:1 port of gitnexus core/wiki/graph-queries.js."""
+"""Graph queries for wiki generation."""
 from __future__ import annotations
 
 from typing import Any

@@ -1,4 +1,4 @@
-"""MCP Resources — 1:1 port of gitnexus mcp/resources.js."""
+"""MCP Resources."""
 from __future__ import annotations
 
 import re

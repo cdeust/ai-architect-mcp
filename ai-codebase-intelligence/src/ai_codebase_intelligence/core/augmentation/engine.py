@@ -1,4 +1,4 @@
-"""Augmentation engine — 1:1 port of gitnexus core/augmentation/engine.js."""
+"""Augmentation engine."""
 from __future__ import annotations
 
 import os

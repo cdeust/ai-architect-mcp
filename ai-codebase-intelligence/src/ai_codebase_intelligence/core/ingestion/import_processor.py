@@ -1,4 +1,4 @@
-"""Import processor — 1:1 port of gitnexus import-processor.js processImports."""
+"""Import processor processImports."""
 from __future__ import annotations
 
 import json

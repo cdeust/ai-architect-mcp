@@ -1,4 +1,4 @@
-"""AI context generator — 1:1 port of gitnexus cli/ai-context.js."""
+"""AI context generator."""
 from __future__ import annotations
 
 import os

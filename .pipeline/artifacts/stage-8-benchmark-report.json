@@ -1,0 +1,17 @@
+{
+  "stage": 8,
+  "finding_id": "FIND-001",
+  "benchmarks": {
+    "write_1000_ms": 0.6045,
+    "read_hit_128_ms": 0.062,
+    "read_miss_1000_ms": 0.4201,
+    "avg_write_us": 0.6,
+    "avg_read_hit_us": 0.48,
+    "avg_read_miss_us": 0.42
+  },
+  "gates": {
+    "sub_millisecond_ops": true
+  },
+  "verdict": "PASS",
+  "timestamp": "2026-03-27T23:41:56.224750+00:00"
+}

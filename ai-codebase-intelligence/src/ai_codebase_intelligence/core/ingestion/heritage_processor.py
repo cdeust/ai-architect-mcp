@@ -1,4 +1,4 @@
-"""Heritage processor — 1:1 port of gitnexus heritage-processor.js."""
+"""Heritage processor."""
 from __future__ import annotations
 
 from typing import Any, Callable

@@ -1,0 +1,15 @@
+{
+  "finding_id": "FIND-001",
+  "compound_impact_score": 0.865,
+  "propagation_paths_count": 7,
+  "affected_engines": ["prompting"],
+  "affected_packages": ["_prompting/algorithms", "_adapters", "_tools"],
+  "cascade_points": ["sampling_client", "prompting_tools"],
+  "perspective_scores": {
+    "performance": 0.9,
+    "security": 0.3,
+    "maintainability": 0.8,
+    "scope": 0.7
+  },
+  "timestamp": "2026-03-28T10:32:00Z"
+}

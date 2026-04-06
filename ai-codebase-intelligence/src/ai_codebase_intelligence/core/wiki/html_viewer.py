@@ -1,4 +1,4 @@
-"""HTML viewer — 1:1 port of gitnexus core/wiki/html-viewer.js."""
+"""HTML viewer."""
 from __future__ import annotations
 
 import json

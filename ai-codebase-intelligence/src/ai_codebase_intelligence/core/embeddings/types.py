@@ -1,4 +1,4 @@
-"""Embedding types — 1:1 port of gitnexus core/embeddings/types.js."""
+"""Embedding types."""
 from __future__ import annotations
 
 EMBEDDABLE_LABELS: list[str] = ["Function", "Class", "Method", "Interface", "File"]

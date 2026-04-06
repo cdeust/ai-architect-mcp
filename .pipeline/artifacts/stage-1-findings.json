@@ -1,0 +1,22 @@
+{
+  "findings": [
+    {
+      "id": "FIND-001",
+      "source": ".pipeline/findings/test-finding-001.json",
+      "category": "performance",
+      "relevance_score": 0.9,
+      "compound_score": 0.865,
+      "summary": "Add LRU caching to prompting algorithm LLM calls to eliminate redundant calls during pipeline retries. Affects all 5 prompting algorithms and the sampling client. Estimated 48s savings per finding.",
+      "status": "new"
+    }
+  ],
+  "sources_processed": 1,
+  "findings_above_threshold": 1,
+  "graph_verification": {
+    "score": 1.0,
+    "verdict": "pass",
+    "cycles": 0,
+    "contradictions": 0
+  },
+  "timestamp": "2026-03-28T10:31:00Z"
+}

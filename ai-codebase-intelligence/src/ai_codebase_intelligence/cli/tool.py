@@ -1,4 +1,4 @@
-"""Direct CLI tool commands — 1:1 port of gitnexus cli/tool.js."""
+"""Direct CLI tool commands."""
 from __future__ import annotations
 
 import asyncio

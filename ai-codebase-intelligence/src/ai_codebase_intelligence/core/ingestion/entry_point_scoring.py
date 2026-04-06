@@ -1,4 +1,4 @@
-"""Entry point scoring — 1:1 port of gitnexus entry-point-scoring.js."""
+"""Entry point scoring."""
 from __future__ import annotations
 
 import re

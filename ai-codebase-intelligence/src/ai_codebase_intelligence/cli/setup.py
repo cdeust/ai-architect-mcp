@@ -1,4 +1,4 @@
-"""Setup command — 1:1 port of gitnexus cli/setup.js."""
+"""Setup command."""
 from __future__ import annotations
 
 import json

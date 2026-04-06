@@ -1,0 +1,15 @@
+{
+  "orchestrator": "1.0",
+  "stage-0-health": "1.0",
+  "stage-1-discovery": "1.0",
+  "stage-2-impact": "1.0",
+  "stage-3-integration": "1.0",
+  "stage-4-prd": "1.0",
+  "stage-4-5-interview": "1.0",
+  "stage-5-review": "1.0",
+  "stage-6-implementation": "1.0",
+  "stage-7-verification": "1.0",
+  "stage-8-benchmark": "1.0",
+  "stage-9-deployment": "1.0",
+  "stage-10-pr": "1.0"
+}

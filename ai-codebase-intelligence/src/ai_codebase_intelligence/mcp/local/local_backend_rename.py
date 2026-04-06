@@ -1,4 +1,4 @@
-"""Rename tool — 1:1 port of gitnexus LocalBackend.rename()."""
+"""Rename tool.rename()."""
 from __future__ import annotations
 
 import os

@@ -1,4 +1,4 @@
-"""Analyze command — 1:1 port of gitnexus cli/analyze.js."""
+"""Analyze command."""
 from __future__ import annotations
 
 import os

@@ -1,0 +1,39 @@
+{
+  "finding_id": "FIND-001",
+  "pattern": "decorator_on_sampling_client",
+  "affected_ports": [],
+  "affected_adapters": [
+    "sampling_client"
+  ],
+  "new_files": [
+    "_adapters/llm_cache.py",
+    "tests/test_adapters/test_llm_cache.py"
+  ],
+  "modified_files": [
+    "_adapters/sampling_client.py"
+  ],
+  "file_change_manifest": [
+    {
+      "file": "_adapters/llm_cache.py",
+      "action": "new",
+      "estimated_lines": 60
+    },
+    {
+      "file": "_adapters/sampling_client.py",
+      "action": "modify",
+      "estimated_lines": 15
+    },
+    {
+      "file": "tests/test_adapters/test_llm_cache.py",
+      "action": "new",
+      "estimated_lines": 80
+    }
+  ],
+  "architecture_decisions": [
+    "Cache at SamplingClient level, not algorithm level \u2014 single point of change",
+    "LRU eviction with 128 entry bound \u2014 predictable memory",
+    "Skip caching for temperature > 0.5 \u2014 creative calls must not be cached",
+    "Per-instance scope \u2014 no cross-request contamination"
+  ],
+  "timestamp": "2026-03-27T23:36:02.392492+00:00"
+}

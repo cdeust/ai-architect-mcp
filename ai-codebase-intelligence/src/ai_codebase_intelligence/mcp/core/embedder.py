@@ -1,4 +1,4 @@
-"""MCP embedder (read-only) — 1:1 port of gitnexus mcp/core/embedder.js.
+"""MCP embedder (read-only).
 
 Singleton factory. Only computes query embeddings for semantic search.
 """

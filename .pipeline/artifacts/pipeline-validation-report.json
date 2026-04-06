@@ -1,0 +1,42 @@
+{
+  "pipeline_run": "pipeline-FIND-001",
+  "finding": "FIND-001",
+  "stages_completed": [0, 1, 2, 3, 4],
+  "stages_remaining": [5, 6, 7, 8, 9, 10],
+  "fix_validation": {
+    "fix_1_append_audit_event": {
+      "tool": "ai_architect_append_audit_event",
+      "fix": "Docstring now enumerates all required fields (event_id, session_id, stage_id, tool_name, outcome, message)",
+      "status": "RESOLVED",
+      "evidence": "Called successfully 5 times across stages 0-4 with all required fields. No validation errors.",
+      "stages_tested": [0, 1, 2, 3, 4]
+    },
+    "fix_2_evaluate_nli": {
+      "tool": "ai_architect_evaluate_nli",
+      "fix": "Now gracefully degrades when sampling is unavailable (returns INCONCLUSIVE instead of raising)",
+      "status": "NOT_RESOLVED",
+      "evidence": "Called in Stage 4. Returned error: 'Client does not support sampling'. The tool still raises an error instead of returning INCONCLUSIVE. The graceful degradation fix is NOT working in the current MCP context.",
+      "stages_tested": [4]
+    },
+    "fix_3_verify_graph": {
+      "tool": "ai_architect_verify_graph",
+      "fix": "Docstring now has full schema (NodeType enum values, RelationshipType enum values, required fields)",
+      "status": "RESOLVED",
+      "evidence": "Called successfully 3 times (stages 1, 3, 4). Correctly validated graphs with requirement/implementation/test/specification node types and depends/tests/requires/implies relationships. UUID format requirement discovered and handled.",
+      "stages_tested": [1, 3, 4]
+    },
+    "fix_4_fuse_confidence": {
+      "tool": "ai_architect_fuse_confidence",
+      "fix": "Docstring now has full ConfidenceEstimate schema (source enum values, value, uncertainty, reasoning)",
+      "status": "RESOLVED",
+      "evidence": "First call with incorrect source values ('hor_rules') correctly returned validation error showing valid enum values. Second call with correct source enum values (thought_buffer, adaptive_expansion, metacognitive, trm_refinement) succeeded. Fused confidence: 0.868.",
+      "stages_tested": [4]
+    }
+  },
+  "summary": {
+    "fixes_resolved": 3,
+    "fixes_not_resolved": 1,
+    "resolution_rate": "75%",
+    "blocking_issue": "evaluate_nli still raises error when sampling unavailable instead of graceful degradation"
+  }
+}

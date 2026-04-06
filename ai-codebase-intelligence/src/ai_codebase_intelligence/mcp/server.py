@@ -1,4 +1,4 @@
-"""MCP Server — 1:1 port of gitnexus mcp/server.js. Uses fastmcp."""
+"""MCP Server. Uses fastmcp."""
 from __future__ import annotations
 
 import json
