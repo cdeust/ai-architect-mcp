@@ -10,7 +10,8 @@ import logging
 import sqlite3
 
 from .ports import SearchPort
-from .._models.graph_models import NodeModel, SearchResult
+from .._models.graph_types import GraphNode
+from .._models.graph_models import SearchResult
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class FTS5Search(SearchPort):
             self._conn = sqlite3.connect(self._db_path)
         return self._conn
 
-    def index_nodes(self, nodes: list[NodeModel]) -> int:
+    def index_nodes(self, nodes: list[GraphNode]) -> int:
         """Rebuild FTS index from nodes.
 
         Drops and recreates the FTS table, then populates from

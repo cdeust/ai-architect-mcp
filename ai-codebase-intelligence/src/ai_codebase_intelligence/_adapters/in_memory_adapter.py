@@ -7,38 +7,37 @@ verify pipeline logic without touching SQLite.
 from __future__ import annotations
 
 from .ports import GraphStoragePort
-from .._models.graph_models import NodeModel, RelationshipModel
+from .._models.graph_types import GraphNode, GraphRelationship
 
 
 class InMemoryGraphStorage(GraphStoragePort):
     """In-memory graph storage for testing."""
 
     def __init__(self) -> None:
-        self._nodes: dict[str, NodeModel] = {}
-        self._rels: dict[str, RelationshipModel] = {}
+        self._nodes: dict[str, GraphNode] = {}
+        self._rels: list[GraphRelationship] = []
 
     def initialize(self) -> None:
         """No-op for in-memory storage."""
 
-    def store_nodes(self, nodes: list[NodeModel]) -> int:
+    def store_nodes(self, nodes: list[GraphNode]) -> int:
         for n in nodes:
             self._nodes[n.id] = n
         return len(nodes)
 
-    def store_relationships(self, relationships: list[RelationshipModel]) -> int:
-        for r in relationships:
-            self._rels[r.id] = r
+    def store_relationships(self, relationships: list[GraphRelationship]) -> int:
+        self._rels.extend(relationships)
         return len(relationships)
 
-    def load_all_nodes(self) -> list[NodeModel]:
+    def load_all_nodes(self) -> list[GraphNode]:
         return list(self._nodes.values())
 
-    def load_all_relationships(self) -> list[RelationshipModel]:
-        return list(self._rels.values())
+    def load_all_relationships(self) -> list[GraphRelationship]:
+        return list(self._rels)
 
     def get_stats(self) -> dict[str, int]:
         return {"nodes": len(self._nodes), "edges": len(self._rels)}
 
     def close(self) -> None:
         self._nodes.clear()
-        self._rels.clear()
+        self._rels = []

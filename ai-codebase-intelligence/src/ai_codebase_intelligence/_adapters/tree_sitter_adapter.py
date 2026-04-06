@@ -22,7 +22,7 @@ import tree_sitter
 
 from .ports import ParserPort
 from .._config.models import IndexingSection
-from .._models.graph_models import NodeModel, RelationshipModel
+from .._models.graph_types import GraphNode, GraphRelationship, NodeLabel, RelationshipType
 
 logger = logging.getLogger(__name__)
 
@@ -48,29 +48,29 @@ _GRAMMAR_ATTR: dict[str, str] = {
     "php": "language_php",
 }
 
-_CAPTURE_TO_LABEL: dict[str, str] = {
-    "definition.function": "Function",
-    "definition.class": "Class",
-    "definition.interface": "Interface",
-    "definition.method": "Method",
-    "definition.struct": "Struct",
-    "definition.enum": "Enum",
-    "definition.namespace": "Namespace",
-    "definition.module": "Module",
-    "definition.trait": "Trait",
-    "definition.impl": "Impl",
-    "definition.type": "TypeAlias",
-    "definition.const": "Const",
-    "definition.static": "Static",
-    "definition.typedef": "Typedef",
-    "definition.macro": "Macro",
-    "definition.union": "Union",
-    "definition.property": "Property",
-    "definition.record": "Record",
-    "definition.delegate": "Delegate",
-    "definition.annotation": "Annotation",
-    "definition.constructor": "Constructor",
-    "definition.template": "Template",
+_CAPTURE_TO_LABEL: dict[str, NodeLabel] = {
+    "definition.function": NodeLabel.FUNCTION,
+    "definition.class": NodeLabel.CLASS,
+    "definition.interface": NodeLabel.INTERFACE,
+    "definition.method": NodeLabel.METHOD,
+    "definition.struct": NodeLabel.STRUCT,
+    "definition.enum": NodeLabel.ENUM,
+    "definition.namespace": NodeLabel.NAMESPACE,
+    "definition.module": NodeLabel.MODULE,
+    "definition.trait": NodeLabel.TRAIT,
+    "definition.impl": NodeLabel.IMPL,
+    "definition.type": NodeLabel.TYPE_ALIAS,
+    "definition.const": NodeLabel.CONST,
+    "definition.static": NodeLabel.STATIC,
+    "definition.typedef": NodeLabel.TYPEDEF,
+    "definition.macro": NodeLabel.MACRO,
+    "definition.union": NodeLabel.UNION,
+    "definition.property": NodeLabel.PROPERTY,
+    "definition.record": NodeLabel.RECORD,
+    "definition.delegate": NodeLabel.DELEGATE,
+    "definition.annotation": NodeLabel.ANNOTATION,
+    "definition.constructor": NodeLabel.CONSTRUCTOR,
+    "definition.template": NodeLabel.TEMPLATE,
 }
 
 
@@ -129,7 +129,7 @@ class TreeSitterParser(ParserPort):
 
     def parse_file(
         self, file_path: str, content: str, language: str
-    ) -> list[NodeModel]:
+    ) -> list[GraphNode]:
         """Parse a file and extract symbol nodes."""
         max_size = self._config.max_file_size_bytes if self._config else 524288
         if len(content) > max_size:
@@ -154,7 +154,7 @@ class TreeSitterParser(ParserPort):
         except Exception:
             return []
 
-        nodes: list[NodeModel] = []
+        nodes: list[GraphNode] = []
         for _pattern, capture_dict in matches:
             cm: dict[str, Any] = {}
             for cname, node_list in capture_dict.items():
@@ -169,7 +169,7 @@ class TreeSitterParser(ParserPort):
                 continue
 
             node_name = name_node.text.decode("utf-8") if name_node and name_node.text else "init"
-            node_label = "CodeElement"
+            node_label = NodeLabel.VARIABLE
             for cap_key, label in _CAPTURE_TO_LABEL.items():
                 if cap_key in cm:
                     node_label = label
@@ -183,19 +183,19 @@ class TreeSitterParser(ParserPort):
 
             sl = def_node.start_point[0] if def_node else (name_node.start_point[0] if name_node else 0)
             el = def_node.end_point[0] if def_node else sl
-            nid = f"{node_label}:{file_path}:{node_name}:{sl}"
+            nid = f"{node_label.value}:{file_path}:{node_name}:{sl}"
 
-            nodes.append(NodeModel(
+            nodes.append(GraphNode(
                 id=nid, label=node_label, name=node_name,
                 file_path=file_path, start_line=sl, end_line=el,
-                properties={"language": language},
+                language=language,
             ))
 
         return nodes
 
     def extract_calls(
         self, file_path: str, content: str, language: str
-    ) -> list[RelationshipModel]:
+    ) -> list[GraphRelationship]:
         """Extract CALLS relationships from a file."""
         try:
             parser, lang = self._get_parser(language, file_path)
@@ -216,7 +216,7 @@ class TreeSitterParser(ParserPort):
         except Exception:
             return []
 
-        calls: list[RelationshipModel] = []
+        calls: list[GraphRelationship] = []
         for _pattern, capture_dict in matches:
             cm: dict[str, Any] = {}
             for cname, node_list in capture_dict.items():
@@ -233,16 +233,12 @@ class TreeSitterParser(ParserPort):
             if not called_name:
                 continue
 
-            call_line = call_name_node.start_point[0]
-            rel_id = f"CALLS:{file_path}:{call_line}:{called_name}"
-
-            calls.append(RelationshipModel(
-                id=rel_id,
+            calls.append(GraphRelationship(
                 source_id=f"File:{file_path}",
                 target_id=called_name,
-                type="CALLS",
+                relationship_type=RelationshipType.CALLS,
                 confidence=0.5,
-                reason="ast-call-site",
+                properties={"reason": "ast-call-site"},
             ))
 
         return calls

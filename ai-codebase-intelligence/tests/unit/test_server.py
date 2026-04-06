@@ -25,8 +25,8 @@ from ai_codebase_intelligence._server.mcp_http import (
     DEFAULT_SESSION_TTL_SECONDS,
 )
 
-_STATS_PATCH = "ai_codebase_intelligence._server.api._query_repo_stats"
-_SEARCH_PATCH = "ai_codebase_intelligence._server.api._run_search"
+_STATS_PATCH = "ai_codebase_intelligence._server.handlers._query_repo_stats"
+_SEARCH_PATCH = "ai_codebase_intelligence._server.handlers._run_search"
 _ANALYZE_PATCH = "ai_codebase_intelligence._tools.codebase_tools.analyze"
 _EMPTY_STATS = {"node_count": 0, "edge_count": 0}
 

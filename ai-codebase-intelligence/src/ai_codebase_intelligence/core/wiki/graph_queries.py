@@ -213,3 +213,26 @@ def get_community_file_mapping() -> list[dict[str, Any]]:
             "files": other_files, "secondaryFiles": [],
         })
     return results[:30]
+
+
+def get_inter_community_call_edges() -> list[dict[str, str]]:
+    """Get call edges that cross community boundaries."""
+    rows = execute_query(REPO_ID,
+        "MATCH (a)-[:CodeRelation {type: 'CALLS'}]->(b), "
+        "(a)-[:CodeRelation {type: 'MEMBER_OF'}]->(ca:Community), "
+        "(b)-[:CodeRelation {type: 'MEMBER_OF'}]->(cb:Community) "
+        "WHERE ca.id <> cb.id "
+        "RETURN DISTINCT ca.heuristicLabel AS fromComm, "
+        "cb.heuristicLabel AS toComm, a.name AS fromName, b.name AS toName "
+        "LIMIT 100")
+    return rows or []
+
+
+def get_cross_community_processes(limit: int = 10) -> list[dict[str, Any]]:
+    """Get processes that span multiple communities."""
+    rows = execute_query(REPO_ID,
+        "MATCH (p:Process) WHERE p.processType = 'cross_community' "
+        "RETURN p.id AS id, p.heuristicLabel AS label, "
+        "p.stepCount AS stepCount, p.communities AS communities "
+        f"ORDER BY p.stepCount DESC LIMIT {limit}")
+    return rows or []

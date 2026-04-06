@@ -47,10 +47,9 @@ async def detect_changes_tool(backend: Any, repo: dict[str, Any], params: dict[s
         norm = file.replace("\\", "/")
         nodes = index.find_by_file(norm)
         for node in nodes:
-            props = node.get("properties", {})
             changed_symbols.append({
-                "id": node["id"], "name": props.get("name", ""),
-                "type": node.get("label", ""), "filePath": props.get("filePath", ""),
+                "id": node.id, "name": node.name,
+                "type": node.label.value, "filePath": node.file_path,
                 "change_type": "Modified",
             })
 

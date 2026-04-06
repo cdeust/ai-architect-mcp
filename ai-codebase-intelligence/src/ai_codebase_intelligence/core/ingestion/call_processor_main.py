@@ -4,6 +4,7 @@ from typing import Any, Callable
 
 import tree_sitter
 
+from ..._models.graph_types import GraphRelationship, RelationshipType
 from ...lib.utils import generate_id
 from ..tree_sitter.parser_loader import load_language
 from .language_queries import LANGUAGE_QUERIES
@@ -91,15 +92,13 @@ def process_calls(
             )
             source_id = enclosing_func_id or generate_id("File", file["path"])
 
-            rel_id = generate_id("CALLS", f"{source_id}:{called_name}->{resolved['nodeId']}")
-            graph.add_relationship({
-                "id": rel_id,
-                "sourceId": source_id,
-                "targetId": resolved["nodeId"],
-                "type": "CALLS",
-                "confidence": resolved["confidence"],
-                "reason": resolved["reason"],
-            })
+            graph.add_relationship(GraphRelationship(
+                source_id=source_id,
+                target_id=resolved["nodeId"],
+                relationship_type=RelationshipType.CALLS,
+                confidence=resolved["confidence"],
+                properties={"reason": resolved["reason"]},
+            ))
 
 
 def process_calls_from_extracted(
@@ -127,18 +126,13 @@ def process_calls_from_extracted(
             )
             if resolved is None:
                 continue
-            rel_id = generate_id(
-                "CALLS",
-                f"{call['sourceId']}:{call['calledName']}->{resolved['nodeId']}",
-            )
-            graph.add_relationship({
-                "id": rel_id,
-                "sourceId": call["sourceId"],
-                "targetId": resolved["nodeId"],
-                "type": "CALLS",
-                "confidence": resolved["confidence"],
-                "reason": resolved["reason"],
-            })
+            graph.add_relationship(GraphRelationship(
+                source_id=call["sourceId"],
+                target_id=resolved["nodeId"],
+                relationship_type=RelationshipType.CALLS,
+                confidence=resolved["confidence"],
+                properties={"reason": resolved["reason"]},
+            ))
 
     if on_progress is not None:
         on_progress(total_files, total_files)

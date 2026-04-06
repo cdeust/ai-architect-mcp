@@ -1,12 +1,16 @@
 """FastMCP server entry — imports _app singleton + all tool modules.
 
-Tools exposed (11 total):
+Tools exposed (17 total):
   Indexing (atomic, Claude-orchestrated):
     scan, parse, store, analyze (convenience)
   Query (read-only):
     query, context, impact
   Analysis (read-only):
     detect_changes, list_repos
+  Git analytics (read-only, science-backed):
+    ownership, bus_factor, churn, cochange, dead_code
+  Documentation:
+    wiki
   Mutation (destructive):
     rename, cypher
 """
@@ -22,6 +26,8 @@ from ai_codebase_intelligence._tools import indexing_tools  # noqa: F401
 from ai_codebase_intelligence._tools import query_tools  # noqa: F401
 from ai_codebase_intelligence._tools import analysis_tools  # noqa: F401
 from ai_codebase_intelligence._tools import mutation_tools  # noqa: F401
+from ai_codebase_intelligence._tools import git_analytics_tools  # noqa: F401
+from ai_codebase_intelligence._tools import wiki_tools  # noqa: F401
 
 
 def main() -> None:

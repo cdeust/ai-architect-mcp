@@ -38,9 +38,9 @@ def process_processes(
 
     calls_edges = _build_calls_graph(knowledge_graph)
     reverse_calls = _build_reverse_calls_graph(knowledge_graph)
-    node_map: dict[str, dict[str, Any]] = {}
+    node_map: dict[str, Any] = {}
     for n in knowledge_graph.iter_nodes():
-        node_map[n["id"]] = n
+        node_map[n.id] = n
 
     entry_points = _find_entry_points(knowledge_graph, reverse_calls, calls_edges)
 
@@ -76,10 +76,10 @@ def process_processes(
         comms = list({membership_map[nid] for nid in trace if nid in membership_map})
         process_type = "cross_community" if len(comms) > 1 else "intra_community"
 
-        entry_node = node_map.get(entry_id, {})
-        terminal_node = node_map.get(terminal_id, {})
-        entry_name = entry_node.get("properties", {}).get("name", "Unknown")
-        terminal_name = terminal_node.get("properties", {}).get("name", "Unknown")
+        entry_node = node_map.get(entry_id)
+        terminal_node = node_map.get(terminal_id)
+        entry_name = entry_node.name if entry_node else "Unknown"
+        terminal_name = terminal_node.name if terminal_node else "Unknown"
         label = f"{_capitalize(entry_name)} -> {_capitalize(terminal_name)}"
         pid = f"proc_{idx}_{_sanitize_id(entry_name)}"
 
@@ -114,16 +114,16 @@ def process_processes(
 def _build_calls_graph(graph: KnowledgeGraph) -> dict[str, list[str]]:
     adj: dict[str, list[str]] = {}
     for rel in graph.iter_relationships():
-        if rel.get("type") == "CALLS" and rel.get("confidence", 1.0) >= MIN_TRACE_CONFIDENCE:
-            adj.setdefault(rel["sourceId"], []).append(rel["targetId"])
+        if rel.relationship_type.value == "CALLS" and rel.confidence >= MIN_TRACE_CONFIDENCE:
+            adj.setdefault(rel.source_id, []).append(rel.target_id)
     return adj
 
 
 def _build_reverse_calls_graph(graph: KnowledgeGraph) -> dict[str, list[str]]:
     adj: dict[str, list[str]] = {}
     for rel in graph.iter_relationships():
-        if rel.get("type") == "CALLS" and rel.get("confidence", 1.0) >= MIN_TRACE_CONFIDENCE:
-            adj.setdefault(rel["targetId"], []).append(rel["sourceId"])
+        if rel.relationship_type.value == "CALLS" and rel.confidence >= MIN_TRACE_CONFIDENCE:
+            adj.setdefault(rel.target_id, []).append(rel.source_id)
     return adj
 
 
@@ -132,36 +132,34 @@ def _find_entry_points(
     reverse_calls: dict[str, list[str]],
     calls_edges: dict[str, list[str]],
 ) -> list[str]:
-    symbol_types = {"Function", "Method"}
+    symbol_labels = {"Function", "Method"}
     candidates: list[dict[str, Any]] = []
 
     for node in graph.iter_nodes():
-        if node.get("label") not in symbol_types:
+        if node.label.value not in symbol_labels:
             continue
-        props = node.get("properties", {})
-        fp = props.get("filePath", "")
-        if is_test_file(fp):
+        if is_test_file(node.file_path):
             continue
 
-        callers = reverse_calls.get(node["id"], [])
-        callees = calls_edges.get(node["id"], [])
+        callers = reverse_calls.get(node.id, [])
+        callees = calls_edges.get(node.id, [])
         if not callees:
             continue
 
         result = calculate_entry_point_score(
-            props.get("name", ""),
-            props.get("language", "javascript"),
-            props.get("isExported", False),
-            len(callers), len(callees), fp,
+            node.name,
+            node.language or "javascript",
+            node.is_exported,
+            len(callers), len(callees), node.file_path,
         )
 
         score = result["score"]
-        ast_mult = props.get("astFrameworkMultiplier", 1.0)
+        ast_mult = node.properties.get("astFrameworkMultiplier", 1.0)
         if ast_mult > 1.0:
             score *= ast_mult
 
         if score > 0:
-            candidates.append({"id": node["id"], "score": score})
+            candidates.append({"id": node.id, "score": score})
 
     candidates.sort(key=lambda c: c["score"], reverse=True)
     return [c["id"] for c in candidates[:200]]

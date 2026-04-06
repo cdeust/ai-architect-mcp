@@ -13,12 +13,15 @@ from ...core.storage.repo_store import (
 
 VALID_NODE_LABELS: frozenset[str] = frozenset({
     "File", "Folder", "Function", "Class", "Interface", "Method", "CodeElement",
-    "Community", "Process", "Struct", "Enum", "Macro", "Typedef", "Union",
-    "Namespace", "Trait", "Impl", "TypeAlias", "Const", "Static", "Property",
-    "Record", "Delegate", "Annotation", "Constructor", "Template", "Module",
+    "Community", "Process", "Contributor", "Struct", "Enum", "Macro", "Typedef",
+    "Union", "Namespace", "Trait", "Impl", "TypeAlias", "Const", "Static",
+    "Property", "Record", "Delegate", "Annotation", "Constructor", "Template",
+    "Module",
 })
 
-VALID_RELATION_TYPES: frozenset[str] = frozenset({"CALLS", "IMPORTS", "EXTENDS", "IMPLEMENTS"})
+VALID_RELATION_TYPES: frozenset[str] = frozenset({
+    "CALLS", "IMPORTS", "EXTENDS", "IMPLEMENTS", "AUTHORED_BY", "CO_CHANGES_WITH",
+})
 
 CYPHER_WRITE_RE = re.compile(r"\b(CREATE|DELETE|SET|MERGE|REMOVE|DROP|ALTER|COPY|DETACH)\b", re.I)
 
@@ -156,6 +159,21 @@ class LocalBackend:
         if method == "rename":
             from .local_backend_rename import rename_tool
             return await rename_tool(self, repo, params)
+        if method == "ownership":
+            from .local_backend_ownership import ownership_tool
+            return await ownership_tool(self, repo, params)
+        if method == "bus_factor":
+            from .local_backend_bus_factor import bus_factor_tool
+            return await bus_factor_tool(self, repo, params)
+        if method == "churn":
+            from .local_backend_churn import churn_tool
+            return await churn_tool(self, repo, params)
+        if method == "cochange":
+            from .local_backend_cochange import cochange_tool
+            return await cochange_tool(self, repo, params)
+        if method == "dead_code":
+            from .local_backend_dead_code import dead_code_tool
+            return await dead_code_tool(self, repo, params)
         raise RuntimeError(f"Unknown tool: {method}")
 
     async def _cypher(self, repo: dict[str, Any], params: dict[str, Any]) -> Any:
@@ -201,89 +219,19 @@ class LocalBackend:
         self.context_cache.clear()
         self.initialized_repos.clear()
 
-    # Resource query helpers — use GraphIndex + SQLite
+    # Resource query helpers — delegated to local_backend_resources.py
     async def query_clusters(self, repo_name: str, limit: int = 100) -> dict[str, Any]:
-        repo = await self.resolve_repo(repo_name)
-        await self.ensure_initialized(repo["id"])
-        try:
-            rows = query_sql(repo["id"],
-                f"SELECT id, properties FROM nodes WHERE label = 'Community' "
-                f"ORDER BY CAST(json_extract(properties, '$.symbolCount') AS INTEGER) DESC LIMIT {limit}")
-            import json
-            clusters = []
-            for r in rows:
-                props = json.loads(r.get("properties", "{}"))
-                clusters.append({
-                    "id": r["id"], "heuristicLabel": props.get("heuristicLabel", ""),
-                    "cohesion": props.get("cohesion", 0), "symbolCount": props.get("symbolCount", 0),
-                })
-            return {"clusters": clusters}
-        except Exception:
-            return {"clusters": []}
+        from .local_backend_resources import query_clusters
+        return await query_clusters(self, repo_name, limit)
 
     async def query_processes(self, repo_name: str, limit: int = 50) -> dict[str, Any]:
-        repo = await self.resolve_repo(repo_name)
-        await self.ensure_initialized(repo["id"])
-        try:
-            rows = query_sql(repo["id"],
-                f"SELECT id, properties FROM nodes WHERE label = 'Process' "
-                f"ORDER BY CAST(json_extract(properties, '$.stepCount') AS INTEGER) DESC LIMIT {limit}")
-            import json
-            processes = []
-            for r in rows:
-                props = json.loads(r.get("properties", "{}"))
-                processes.append({
-                    "id": r["id"], "heuristicLabel": props.get("heuristicLabel", ""),
-                    "processType": props.get("processType", ""), "stepCount": props.get("stepCount", 0),
-                })
-            return {"processes": processes}
-        except Exception:
-            return {"processes": []}
+        from .local_backend_resources import query_processes
+        return await query_processes(self, repo_name, limit)
 
     async def query_cluster_detail(self, name: str, repo_name: str) -> dict[str, Any]:
-        repo = await self.resolve_repo(repo_name)
-        await self.ensure_initialized(repo["id"])
-        idx = get_index(repo["id"])
-        clusters = idx.find_by_name(name)
-        community = next((c for c in clusters if c.get("label") == "Community"), None)
-        if not community:
-            return {"error": f"Cluster '{name}' not found"}
-        members = []
-        for nid, edges in idx._in.items():
-            for src_id, rel in edges:
-                if rel.get("type") == "MEMBER_OF" and rel.get("targetId") == community["id"]:
-                    node = idx.get_node(src_id)
-                    if node:
-                        props = node.get("properties", {})
-                        members.append({"name": props.get("name", ""), "filePath": props.get("filePath", "")})
-        cprops = community.get("properties", {})
-        return {
-            "cluster": {"id": community["id"], "heuristicLabel": cprops.get("heuristicLabel", ""),
-                        "cohesion": cprops.get("cohesion", 0), "symbolCount": cprops.get("symbolCount", 0)},
-            "members": members[:30],
-        }
+        from .local_backend_resources import query_cluster_detail
+        return await query_cluster_detail(self, name, repo_name)
 
     async def query_process_detail(self, name: str, repo_name: str) -> dict[str, Any]:
-        repo = await self.resolve_repo(repo_name)
-        await self.ensure_initialized(repo["id"])
-        idx = get_index(repo["id"])
-        procs = idx.find_by_name(name)
-        process = next((p for p in procs if p.get("label") == "Process"), None)
-        if not process:
-            return {"error": f"Process '{name}' not found"}
-        pprops = process.get("properties", {})
-        # Find steps via incoming STEP_IN_PROCESS edges
-        steps = []
-        for nid_edges in idx._in.get(process["id"], []):
-            src_id, rel = nid_edges
-            if rel.get("type") == "STEP_IN_PROCESS":
-                node = idx.get_node(src_id)
-                if node:
-                    nprops = node.get("properties", {})
-                    steps.append({"step": rel.get("step", 0), "name": nprops.get("name", ""), "filePath": nprops.get("filePath", "")})
-        steps.sort(key=lambda s: s["step"])
-        return {
-            "process": {"id": process["id"], "heuristicLabel": pprops.get("heuristicLabel", ""),
-                        "processType": pprops.get("processType", ""), "stepCount": pprops.get("stepCount", 0)},
-            "steps": steps,
-        }
+        from .local_backend_resources import query_process_detail
+        return await query_process_detail(self, name, repo_name)

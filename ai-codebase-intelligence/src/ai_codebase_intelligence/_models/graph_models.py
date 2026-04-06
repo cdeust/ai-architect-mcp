@@ -49,10 +49,11 @@ class NodeLabel(str, Enum):
     CONSTRUCTOR = "Constructor"
     TEMPLATE = "Template"
     MODULE = "Module"
+    CONTRIBUTOR = "Contributor"
 
 
 class RelationType(str, Enum):
-    """Valid relationship types — matches gitnexus schema.js REL_TYPES."""
+    """Valid relationship types for the knowledge graph."""
 
     CONTAINS = "CONTAINS"
     DEFINES = "DEFINES"
@@ -62,6 +63,8 @@ class RelationType(str, Enum):
     IMPLEMENTS = "IMPLEMENTS"
     MEMBER_OF = "MEMBER_OF"
     STEP_IN_PROCESS = "STEP_IN_PROCESS"
+    AUTHORED_BY = "AUTHORED_BY"
+    CO_CHANGES_WITH = "CO_CHANGES_WITH"
 
 
 class NodeModel(BaseModel):

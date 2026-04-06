@@ -19,6 +19,9 @@ import os
 import sqlite3
 from typing import Any
 
+from ..._models.graph_types import (
+    GraphNode, GraphRelationship, NodeLabel, RelationshipType,
+)
 from ..graph.graph import KnowledgeGraph
 
 logger = logging.getLogger(__name__)
@@ -93,18 +96,17 @@ class SQLiteStore:
 
         node_rows = []
         for node in graph.iter_nodes():
-            props = node.get("properties", {})
             node_rows.append((
-                node["id"],
-                node.get("label", ""),
-                props.get("name", ""),
-                props.get("filePath", ""),
-                props.get("startLine", 0),
-                props.get("endLine", 0),
-                1 if props.get("isExported") else 0,
-                props.get("content", ""),
-                props.get("description", ""),
-                json.dumps(props),
+                node.id,
+                node.label.value,
+                node.name,
+                node.file_path,
+                node.start_line,
+                node.end_line,
+                1 if node.is_exported else 0,
+                node.properties.get("content", ""),
+                node.docstring,
+                json.dumps(node.properties),
             ))
 
         c.executemany(
@@ -115,13 +117,13 @@ class SQLiteStore:
         rel_rows = []
         for rel in graph.iter_relationships():
             rel_rows.append((
-                rel.get("id", ""),
-                rel.get("sourceId", ""),
-                rel.get("targetId", ""),
-                rel.get("type", ""),
-                rel.get("confidence", 1.0),
-                rel.get("reason", ""),
-                rel.get("step", 0),
+                f"{rel.source_id}->{rel.target_id}",
+                rel.source_id,
+                rel.target_id,
+                rel.relationship_type.value,
+                rel.confidence,
+                rel.properties.get("reason", ""),
+                rel.properties.get("step", 0),
             ))
 
         c.executemany(
@@ -151,20 +153,45 @@ class SQLiteStore:
         graph = KnowledgeGraph()
         c = self._conn
 
-        for row in c.execute("SELECT id, label, properties FROM nodes"):
-            node_id, label, props_json = row
-            props = json.loads(props_json) if props_json else {}
-            graph.add_node({"id": node_id, "label": label, "properties": props})
+        for row in c.execute(
+            "SELECT id, label, name, filePath, startLine, endLine, "
+            "isExported, content, description, properties FROM nodes"
+        ):
+            node_id, label, name, file_path, start_line, end_line, \
+                is_exported, content, description, props_json = row
+            extra = json.loads(props_json) if props_json else {}
+            try:
+                node_label = NodeLabel(label)
+            except ValueError:
+                node_label = NodeLabel.CODE_ELEMENT
+            graph.add_node(GraphNode(
+                id=node_id, label=node_label,
+                name=name, file_path=file_path,
+                start_line=start_line, end_line=end_line,
+                is_exported=bool(is_exported),
+                docstring=description,
+                properties=extra,
+            ))
 
         for row in c.execute(
             "SELECT id, sourceId, targetId, type, confidence, reason, step "
             "FROM relationships"
         ):
-            graph.add_relationship({
-                "id": row[0], "sourceId": row[1], "targetId": row[2],
-                "type": row[3], "confidence": row[4],
-                "reason": row[5], "step": row[6],
-            })
+            try:
+                rel_type = RelationshipType(row[3])
+            except ValueError:
+                rel_type = RelationshipType.CALLS
+            props: dict[str, Any] = {}
+            if row[5]:
+                props["reason"] = row[5]
+            if row[6]:
+                props["step"] = row[6]
+            graph.add_relationship(GraphRelationship(
+                source_id=row[1], target_id=row[2],
+                relationship_type=rel_type,
+                confidence=row[4],
+                properties=props,
+            ))
 
         return graph
 

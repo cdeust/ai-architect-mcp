@@ -55,7 +55,7 @@ class TestGraphNode:
             GraphNode(label=NodeLabel.CLASS, name="Foo", file_path="f.py")
 
     def test_all_node_labels(self) -> None:
-        assert len(NodeLabel) == 27
+        assert len(NodeLabel) == 29  # 27 original + CONTRIBUTOR + VARIABLE
         assert NodeLabel.FILE.value == "File"
         assert NodeLabel.PROCESS.value == "Process"
         assert NodeLabel.COMMUNITY.value == "Community"
@@ -83,7 +83,7 @@ class TestGraphRelationship:
             )
 
     def test_all_relationship_types(self) -> None:
-        assert len(RelationshipType) == 14
+        assert len(RelationshipType) == 19  # 14 original + git analytics + type system
         assert RelationshipType.CONTAINS.value == "CONTAINS"
         assert RelationshipType.DEFINES.value == "DEFINES"
         assert RelationshipType.EXPORTS.value == "EXPORTS"

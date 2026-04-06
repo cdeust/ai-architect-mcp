@@ -25,8 +25,7 @@ async def impact_tool(backend: Any, repo: dict[str, Any], params: dict[str, Any]
         return {"error": f"Target '{target}' not found"}
 
     sym = targets[0]
-    sym_id = sym["id"]
-    sym_props = sym.get("properties", {})
+    sym_id = sym.id
 
     # BFS direction mapping
     bfs_dir = "incoming" if direction == "upstream" else "outgoing"
@@ -86,7 +85,7 @@ async def impact_tool(backend: Any, repo: dict[str, Any], params: dict[str, Any]
         risk = "MEDIUM"
 
     return {
-        "target": {"id": sym_id, "name": sym_props.get("name", ""), "filePath": sym_props.get("filePath", "")},
+        "target": {"id": sym_id, "name": sym.name, "filePath": sym.file_path},
         "direction": direction,
         "impactedCount": len(impacted),
         "risk": risk,

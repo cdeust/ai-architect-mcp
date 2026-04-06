@@ -22,7 +22,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any
 
-from .._models.graph_models import NodeModel, RelationshipModel, SearchResult
+from .._models.graph_types import GraphNode, GraphRelationship
+from .._models.graph_models import SearchResult
 
 __all__ = [
     "GraphStoragePort",
@@ -44,7 +45,7 @@ class GraphStoragePort(ABC):
         ...
 
     @abstractmethod
-    def store_nodes(self, nodes: list[NodeModel]) -> int:
+    def store_nodes(self, nodes: list[GraphNode]) -> int:
         """Bulk insert nodes.
 
         Args:
@@ -56,7 +57,7 @@ class GraphStoragePort(ABC):
         ...
 
     @abstractmethod
-    def store_relationships(self, relationships: list[RelationshipModel]) -> int:
+    def store_relationships(self, relationships: list[GraphRelationship]) -> int:
         """Bulk insert relationships.
 
         Args:
@@ -68,7 +69,7 @@ class GraphStoragePort(ABC):
         ...
 
     @abstractmethod
-    def load_all_nodes(self) -> list[NodeModel]:
+    def load_all_nodes(self) -> list[GraphNode]:
         """Load all nodes from storage.
 
         Returns:
@@ -77,7 +78,7 @@ class GraphStoragePort(ABC):
         ...
 
     @abstractmethod
-    def load_all_relationships(self) -> list[RelationshipModel]:
+    def load_all_relationships(self) -> list[GraphRelationship]:
         """Load all relationships from storage.
 
         Returns:
@@ -108,7 +109,7 @@ class SearchPort(ABC):
     """
 
     @abstractmethod
-    def index_nodes(self, nodes: list[NodeModel]) -> int:
+    def index_nodes(self, nodes: list[GraphNode]) -> int:
         """Build or rebuild the search index from nodes.
 
         Args:
@@ -143,7 +144,7 @@ class ParserPort(ABC):
     @abstractmethod
     def parse_file(
         self, file_path: str, content: str, language: str
-    ) -> list[NodeModel]:
+    ) -> list[GraphNode]:
         """Parse a single source file and extract symbol nodes.
 
         Args:
@@ -159,7 +160,7 @@ class ParserPort(ABC):
     @abstractmethod
     def extract_calls(
         self, file_path: str, content: str, language: str
-    ) -> list[RelationshipModel]:
+    ) -> list[GraphRelationship]:
         """Extract function call relationships from a source file.
 
         Args:

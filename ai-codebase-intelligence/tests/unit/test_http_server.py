@@ -67,7 +67,7 @@ class TestHandleQueryCallsSearch:
         mock_output.total_matches = 0
 
         with patch(
-            "ai_codebase_intelligence._server.api._run_search",
+            "ai_codebase_intelligence._server.handlers._run_search",
             return_value=[],
         ) as mock_search:
             resp = await handle_query(req, "myrepo", index)
@@ -107,7 +107,7 @@ class TestHandleContextCallsGraph:
 
         fake_stats = {"node_count": 42, "edge_count": 10}
         with patch(
-            "ai_codebase_intelligence._server.api._query_repo_stats",
+            "ai_codebase_intelligence._server.handlers._query_repo_stats",
             return_value=fake_stats,
         ):
             resp = await handle_context(req, "r", index)
@@ -177,7 +177,7 @@ class TestRouterDispatch:
             query_params={"q": "test"},
         )
         with patch(
-            "ai_codebase_intelligence._server.api._run_search",
+            "ai_codebase_intelligence._server.handlers._run_search",
             return_value=[],
         ):
             resp = await route_request(req, {"r": "/p"})

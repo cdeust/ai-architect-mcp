@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from ai_codebase_intelligence._config.supported_languages import (
     GRAMMAR_NAMES,
-    LANGUAGE_EXTENSIONS,
     SupportedLanguage,
     detect_language,
     get_grammar_name,

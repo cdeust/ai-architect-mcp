@@ -20,7 +20,7 @@ import sqlite3
 from typing import Any
 
 from .ports import GraphStoragePort
-from .._models.graph_models import NodeModel, RelationshipModel
+from .._models.graph_types import GraphNode, GraphRelationship, NodeLabel, RelationshipType
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +57,11 @@ _INDEXES = [
 ]
 
 
+def _rel_id(r: GraphRelationship) -> str:
+    """Generate a stable ID for a relationship row."""
+    return f"{r.relationship_type.value}:{r.source_id}->{r.target_id}"
+
+
 class SQLiteGraphStorage(GraphStoragePort):
     """SQLite-backed graph persistence.
 
@@ -80,12 +85,12 @@ class SQLiteGraphStorage(GraphStoragePort):
             self._conn.execute(idx)
         self._conn.commit()
 
-    def store_nodes(self, nodes: list[NodeModel]) -> int:
+    def store_nodes(self, nodes: list[GraphNode]) -> int:
         """Bulk insert nodes via executemany."""
         if not self._conn or not nodes:
             return 0
         rows = [
-            (n.id, n.label, n.name, n.file_path, n.start_line,
+            (n.id, n.label.value, n.name, n.file_path, n.start_line,
              n.end_line, 1 if n.is_exported else 0, n.content,
              n.description, json.dumps(n.properties))
             for n in nodes
@@ -97,13 +102,15 @@ class SQLiteGraphStorage(GraphStoragePort):
         self._conn.commit()
         return len(rows)
 
-    def store_relationships(self, relationships: list[RelationshipModel]) -> int:
+    def store_relationships(self, relationships: list[GraphRelationship]) -> int:
         """Bulk insert relationships via executemany."""
         if not self._conn or not relationships:
             return 0
         rows = [
-            (r.id, r.source_id, r.target_id, r.type,
-             r.confidence, r.reason, r.step)
+            (_rel_id(r), r.source_id, r.target_id,
+             r.relationship_type.value, r.confidence,
+             r.properties.get("reason", ""),
+             r.properties.get("step", 0))
             for r in relationships
         ]
         self._conn.executemany(
@@ -113,7 +120,7 @@ class SQLiteGraphStorage(GraphStoragePort):
         self._conn.commit()
         return len(rows)
 
-    def load_all_nodes(self) -> list[NodeModel]:
+    def load_all_nodes(self) -> list[GraphNode]:
         """Load all nodes from the database."""
         if not self._conn:
             return []
@@ -122,8 +129,8 @@ class SQLiteGraphStorage(GraphStoragePort):
             "is_exported, content, description, properties FROM nodes"
         ).fetchall()
         return [
-            NodeModel(
-                id=r[0], label=r[1], name=r[2], file_path=r[3],
+            GraphNode(
+                id=r[0], label=NodeLabel(r[1]), name=r[2], file_path=r[3],
                 start_line=r[4], end_line=r[5], is_exported=bool(r[6]),
                 content=r[7], description=r[8],
                 properties=json.loads(r[9]) if r[9] else {},
@@ -131,7 +138,7 @@ class SQLiteGraphStorage(GraphStoragePort):
             for r in rows
         ]
 
-    def load_all_relationships(self) -> list[RelationshipModel]:
+    def load_all_relationships(self) -> list[GraphRelationship]:
         """Load all relationships from the database."""
         if not self._conn:
             return []
@@ -140,9 +147,11 @@ class SQLiteGraphStorage(GraphStoragePort):
             "FROM relationships"
         ).fetchall()
         return [
-            RelationshipModel(
-                id=r[0], source_id=r[1], target_id=r[2], type=r[3],
-                confidence=r[4], reason=r[5], step=r[6],
+            GraphRelationship(
+                source_id=r[1], target_id=r[2],
+                relationship_type=RelationshipType(r[3]),
+                confidence=r[4],
+                properties={"reason": r[5], "step": r[6], "db_id": r[0]},
             )
             for r in rows
         ]

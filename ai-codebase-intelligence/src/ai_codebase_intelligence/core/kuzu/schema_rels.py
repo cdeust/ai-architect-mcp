@@ -53,6 +53,7 @@ RELATION_SCHEMA = """CREATE REL TABLE CodeRelation (
   FROM `Constructor` TO `Impl`, FROM `Constructor` TO `Namespace`, FROM `Constructor` TO `Module`,
   FROM `Constructor` TO `Property`, FROM `Constructor` TO `Typedef`,
   FROM `Template` TO Community, FROM `Module` TO Community,
+  FROM File TO Contributor,
   FROM Function TO Process, FROM Method TO Process, FROM Class TO Process,
   FROM Interface TO Process, FROM `Struct` TO Process, FROM `Constructor` TO Process,
   FROM `Module` TO Process, FROM `Macro` TO Process, FROM `Impl` TO Process,

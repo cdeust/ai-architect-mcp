@@ -5,6 +5,7 @@ from typing import Any, Callable
 
 import tree_sitter
 
+from ..._models.graph_types import GraphRelationship, RelationshipType
 from ...lib.utils import generate_id
 from ..tree_sitter.parser_loader import load_language
 from .language_queries import LANGUAGE_QUERIES
@@ -78,15 +79,11 @@ def process_heritage(
                 )
 
                 if child_id and parent_id and child_id != parent_id:
-                    rel_id = generate_id("EXTENDS", f"{child_id}->{parent_id}")
-                    graph.add_relationship({
-                        "id": rel_id,
-                        "sourceId": child_id,
-                        "targetId": parent_id,
-                        "type": "EXTENDS",
-                        "confidence": 1.0,
-                        "reason": "",
-                    })
+                    graph.add_relationship(GraphRelationship(
+                        source_id=child_id, target_id=parent_id,
+                        relationship_type=RelationshipType.EXTENDS,
+                        confidence=1.0,
+                    ))
 
             # IMPLEMENTS
             if "heritage.class" in cm and "heritage.implements" in cm:
@@ -104,15 +101,11 @@ def process_heritage(
                 )
 
                 if class_id and iface_id:
-                    rel_id = generate_id("IMPLEMENTS", f"{class_id}->{iface_id}")
-                    graph.add_relationship({
-                        "id": rel_id,
-                        "sourceId": class_id,
-                        "targetId": iface_id,
-                        "type": "IMPLEMENTS",
-                        "confidence": 1.0,
-                        "reason": "",
-                    })
+                    graph.add_relationship(GraphRelationship(
+                        source_id=class_id, target_id=iface_id,
+                        relationship_type=RelationshipType.IMPLEMENTS,
+                        confidence=1.0,
+                    ))
 
             # Rust trait impl
             if "heritage.trait" in cm and "heritage.class" in cm:
@@ -130,15 +123,12 @@ def process_heritage(
                 )
 
                 if struct_id and trait_id:
-                    rel_id = generate_id("IMPLEMENTS", f"{struct_id}->{trait_id}")
-                    graph.add_relationship({
-                        "id": rel_id,
-                        "sourceId": struct_id,
-                        "targetId": trait_id,
-                        "type": "IMPLEMENTS",
-                        "confidence": 1.0,
-                        "reason": "trait-impl",
-                    })
+                    graph.add_relationship(GraphRelationship(
+                        source_id=struct_id, target_id=trait_id,
+                        relationship_type=RelationshipType.IMPLEMENTS,
+                        confidence=1.0,
+                        properties={"reason": "trait-impl"},
+                    ))
 
 
 def process_heritage_from_extracted(
@@ -163,11 +153,11 @@ def process_heritage_from_extracted(
                 or generate_id("Class", h["parentName"])
             )
             if child_id and parent_id and child_id != parent_id:
-                graph.add_relationship({
-                    "id": generate_id("EXTENDS", f"{child_id}->{parent_id}"),
-                    "sourceId": child_id, "targetId": parent_id,
-                    "type": "EXTENDS", "confidence": 1.0, "reason": "",
-                })
+                graph.add_relationship(GraphRelationship(
+                    source_id=child_id, target_id=parent_id,
+                    relationship_type=RelationshipType.EXTENDS,
+                    confidence=1.0,
+                ))
 
         elif h["kind"] == "implements":
             class_id = (
@@ -180,11 +170,11 @@ def process_heritage_from_extracted(
                 or generate_id("Interface", h["parentName"])
             )
             if class_id and iface_id:
-                graph.add_relationship({
-                    "id": generate_id("IMPLEMENTS", f"{class_id}->{iface_id}"),
-                    "sourceId": class_id, "targetId": iface_id,
-                    "type": "IMPLEMENTS", "confidence": 1.0, "reason": "",
-                })
+                graph.add_relationship(GraphRelationship(
+                    source_id=class_id, target_id=iface_id,
+                    relationship_type=RelationshipType.IMPLEMENTS,
+                    confidence=1.0,
+                ))
 
         elif h["kind"] == "trait-impl":
             struct_id = (
@@ -197,11 +187,12 @@ def process_heritage_from_extracted(
                 or generate_id("Trait", h["parentName"])
             )
             if struct_id and trait_id:
-                graph.add_relationship({
-                    "id": generate_id("IMPLEMENTS", f"{struct_id}->{trait_id}"),
-                    "sourceId": struct_id, "targetId": trait_id,
-                    "type": "IMPLEMENTS", "confidence": 1.0, "reason": "trait-impl",
-                })
+                graph.add_relationship(GraphRelationship(
+                    source_id=struct_id, target_id=trait_id,
+                    relationship_type=RelationshipType.IMPLEMENTS,
+                    confidence=1.0,
+                    properties={"reason": "trait-impl"},
+                ))
 
     if on_progress is not None:
         on_progress(total, total)

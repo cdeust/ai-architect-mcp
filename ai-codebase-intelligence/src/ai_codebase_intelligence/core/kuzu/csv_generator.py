@@ -76,26 +76,24 @@ class FileContentCache:
         self._access_order.append(key)
 
 
-def extract_content(node: dict[str, Any], content_cache: FileContentCache) -> str:
-    file_path = node.get("properties", {}).get("filePath", "")
-    content = content_cache.get(file_path)
+def extract_content(node: Any, content_cache: FileContentCache) -> str:
+    """Extract source content for a graph node."""
+    content = content_cache.get(node.file_path)
     if not content:
         return ""
-    if node.get("label") == "Folder":
+    if node.label.value == "Folder":
         return ""
     if is_binary_content(content):
         return "[Binary file - content not stored]"
-    if node.get("label") == "File":
+    if node.label.value == "File":
         if len(content) > MAX_FILE_CONTENT:
             return content[:MAX_FILE_CONTENT] + "\n... [truncated]"
         return content
-    start_line = node.get("properties", {}).get("startLine")
-    end_line = node.get("properties", {}).get("endLine")
-    if start_line is None or end_line is None:
+    if not node.start_line or not node.end_line:
         return ""
     lines = content.split("\n")
-    start = max(0, start_line - 2)
-    end = min(len(lines) - 1, end_line + 2)
+    start = max(0, node.start_line - 2)
+    end = min(len(lines) - 1, node.end_line + 2)
     snippet = "\n".join(lines[start : end + 1])
     if len(snippet) > MAX_SNIPPET:
         return snippet[:MAX_SNIPPET] + "\n... [truncated]"
@@ -185,26 +183,26 @@ def stream_all_csvs_to_disk(
     seen_file_ids: set[str] = set()
 
     for node in graph.iter_nodes():
-        label = node.get("label", "")
-        props = node.get("properties", {})
+        label = node.label.value
+        props = node.properties
 
         if label == "File":
-            if node["id"] in seen_file_ids:
+            if node.id in seen_file_ids:
                 continue
-            seen_file_ids.add(node["id"])
+            seen_file_ids.add(node.id)
             content = extract_content(node, content_cache)
             file_writer.add_row(",".join([
-                escape_csv_field(node["id"]),
-                escape_csv_field(props.get("name", "")),
-                escape_csv_field(props.get("filePath", "")),
+                escape_csv_field(node.id),
+                escape_csv_field(node.name),
+                escape_csv_field(node.file_path),
                 escape_csv_field(content),
             ]))
 
         elif label == "Folder":
             folder_writer.add_row(",".join([
-                escape_csv_field(node["id"]),
-                escape_csv_field(props.get("name", "")),
-                escape_csv_field(props.get("filePath", "")),
+                escape_csv_field(node.id),
+                escape_csv_field(node.name),
+                escape_csv_field(node.file_path),
             ]))
 
         elif label == "Community":
@@ -214,11 +212,11 @@ def stream_all_csvs_to_disk(
                 for k in keywords
             ) + "]"
             community_writer.add_row(",".join([
-                escape_csv_field(node["id"]),
-                escape_csv_field(props.get("name", "")),
+                escape_csv_field(node.id),
+                escape_csv_field(node.name),
                 escape_csv_field(props.get("heuristicLabel", "")),
                 keywords_str,
-                escape_csv_field(props.get("description", "")),
+                escape_csv_field(node.docstring),
                 escape_csv_field(props.get("enrichedBy", "heuristic")),
                 escape_csv_number(props.get("cohesion"), 0),
                 escape_csv_number(props.get("symbolCount"), 0),
@@ -230,8 +228,8 @@ def stream_all_csvs_to_disk(
                 "'" + c.replace("'", "''") + "'" for c in communities
             ) + "]"
             process_writer.add_row(",".join([
-                escape_csv_field(node["id"]),
-                escape_csv_field(props.get("name", "")),
+                escape_csv_field(node.id),
+                escape_csv_field(node.name),
                 escape_csv_field(props.get("heuristicLabel", "")),
                 escape_csv_field(props.get("processType", "")),
                 escape_csv_number(props.get("stepCount"), 0),
@@ -245,27 +243,27 @@ def stream_all_csvs_to_disk(
             if writer:
                 content = extract_content(node, content_cache)
                 writer.add_row(",".join([
-                    escape_csv_field(node["id"]),
-                    escape_csv_field(props.get("name", "")),
-                    escape_csv_field(props.get("filePath", "")),
-                    escape_csv_number(props.get("startLine"), -1),
-                    escape_csv_number(props.get("endLine"), -1),
-                    "true" if props.get("isExported") else "false",
+                    escape_csv_field(node.id),
+                    escape_csv_field(node.name),
+                    escape_csv_field(node.file_path),
+                    escape_csv_number(node.start_line, -1),
+                    escape_csv_number(node.end_line, -1),
+                    "true" if node.is_exported else "false",
                     escape_csv_field(content),
-                    escape_csv_field(props.get("description", "")),
+                    escape_csv_field(node.docstring),
                 ]))
             else:
                 ml_writer = multi_lang_writers.get(label)
                 if ml_writer:
                     content = extract_content(node, content_cache)
                     ml_writer.add_row(",".join([
-                        escape_csv_field(node["id"]),
-                        escape_csv_field(props.get("name", "")),
-                        escape_csv_field(props.get("filePath", "")),
-                        escape_csv_number(props.get("startLine"), -1),
-                        escape_csv_number(props.get("endLine"), -1),
+                        escape_csv_field(node.id),
+                        escape_csv_field(node.name),
+                        escape_csv_field(node.file_path),
+                        escape_csv_number(node.start_line, -1),
+                        escape_csv_number(node.end_line, -1),
                         escape_csv_field(content),
-                        escape_csv_field(props.get("description", "")),
+                        escape_csv_field(node.docstring),
                     ]))
 
     all_writers = [
@@ -281,12 +279,12 @@ def stream_all_csvs_to_disk(
     rel_writer = BufferedCSVWriter(rel_csv_path, "from,to,type,confidence,reason,step")
     for rel in graph.iter_relationships():
         rel_writer.add_row(",".join([
-            escape_csv_field(rel.get("sourceId", "")),
-            escape_csv_field(rel.get("targetId", "")),
-            escape_csv_field(rel.get("type", "")),
-            escape_csv_number(rel.get("confidence"), 1.0),
-            escape_csv_field(rel.get("reason", "")),
-            escape_csv_number(rel.get("step"), 0),
+            escape_csv_field(rel.source_id),
+            escape_csv_field(rel.target_id),
+            escape_csv_field(rel.relationship_type.value),
+            escape_csv_number(rel.confidence, 1.0),
+            escape_csv_field(rel.properties.get("reason", "")),
+            escape_csv_number(rel.properties.get("step"), 0),
         ]))
     rel_writer.finish()
 

@@ -3,14 +3,17 @@ from __future__ import annotations
 
 NODE_TABLES = [
     "File", "Folder", "Function", "Class", "Interface", "Method", "CodeElement",
-    "Community", "Process",
+    "Community", "Process", "Contributor",
     "Struct", "Enum", "Macro", "Typedef", "Union", "Namespace", "Trait", "Impl",
     "TypeAlias", "Const", "Static", "Property", "Record", "Delegate", "Annotation",
     "Constructor", "Template", "Module",
 ]
 
 REL_TABLE_NAME = "CodeRelation"
-REL_TYPES = ["CONTAINS", "DEFINES", "IMPORTS", "CALLS", "EXTENDS", "IMPLEMENTS", "MEMBER_OF", "STEP_IN_PROCESS"]
+REL_TYPES = [
+    "CONTAINS", "DEFINES", "IMPORTS", "CALLS", "EXTENDS", "IMPLEMENTS",
+    "MEMBER_OF", "STEP_IN_PROCESS", "AUTHORED_BY", "CO_CHANGES_WITH",
+]
 EMBEDDING_TABLE_NAME = "CodeEmbedding"
 
 FILE_SCHEMA = "CREATE NODE TABLE File (id STRING, name STRING, filePath STRING, content STRING, PRIMARY KEY (id))"
@@ -27,15 +30,16 @@ CODE_ELEMENT_SCHEMA = f"CREATE NODE TABLE CodeElement {_SYM_EXP}"
 
 COMMUNITY_SCHEMA = "CREATE NODE TABLE Community (id STRING, label STRING, heuristicLabel STRING, keywords STRING[], description STRING, enrichedBy STRING, cohesion DOUBLE, symbolCount INT32, PRIMARY KEY (id))"
 PROCESS_SCHEMA = "CREATE NODE TABLE Process (id STRING, label STRING, heuristicLabel STRING, processType STRING, stepCount INT32, communities STRING[], entryPointId STRING, terminalId STRING, PRIMARY KEY (id))"
+CONTRIBUTOR_SCHEMA = "CREATE NODE TABLE Contributor (id STRING, name STRING, email STRING, commitCount INT32, PRIMARY KEY (id))"
 
 def _ml(n: str) -> str:
-    return f"CREATE NODE TABLE `{n}` {_SYM_BASE}"
+    return f"CREATE NODE TABLE IF NOT EXISTS {n} {_SYM_BASE}"
 
 EMBEDDING_SCHEMA = f"CREATE NODE TABLE {EMBEDDING_TABLE_NAME} (nodeId STRING, embedding FLOAT[384], PRIMARY KEY (nodeId))"
 
 NODE_SCHEMA_QUERIES = [
     FILE_SCHEMA, FOLDER_SCHEMA, FUNCTION_SCHEMA, CLASS_SCHEMA, INTERFACE_SCHEMA,
-    METHOD_SCHEMA, CODE_ELEMENT_SCHEMA, COMMUNITY_SCHEMA, PROCESS_SCHEMA,
+    METHOD_SCHEMA, CODE_ELEMENT_SCHEMA, COMMUNITY_SCHEMA, PROCESS_SCHEMA, CONTRIBUTOR_SCHEMA,
     _ml("Struct"), _ml("Enum"), _ml("Macro"), _ml("Typedef"), _ml("Union"),
     _ml("Namespace"), _ml("Trait"), _ml("Impl"), _ml("TypeAlias"), _ml("Const"),
     _ml("Static"), _ml("Property"), _ml("Record"), _ml("Delegate"),

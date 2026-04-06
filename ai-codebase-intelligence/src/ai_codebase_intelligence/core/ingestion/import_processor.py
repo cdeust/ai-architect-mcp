@@ -7,6 +7,7 @@ from typing import Any, Callable
 
 import tree_sitter
 
+from ..._models.graph_types import GraphRelationship, RelationshipType
 from ...lib.utils import generate_id
 from ...config.supported_languages import SupportedLanguages
 from ..tree_sitter.parser_loader import load_language
@@ -88,15 +89,12 @@ def _add_import_edge(
 ) -> None:
     source_id = generate_id("File", file_path)
     target_id = generate_id("File", resolved_path)
-    rel_id = generate_id("IMPORTS", f"{file_path}->{resolved_path}")
-    graph.add_relationship({
-        "id": rel_id,
-        "sourceId": source_id,
-        "targetId": target_id,
-        "type": "IMPORTS",
-        "confidence": 1.0,
-        "reason": "",
-    })
+    graph.add_relationship(GraphRelationship(
+        source_id=source_id,
+        target_id=target_id,
+        relationship_type=RelationshipType.IMPORTS,
+        confidence=1.0,
+    ))
     import_map.setdefault(file_path, set()).add(resolved_path)
 
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ai_codebase_intelligence._storage.git_utils import (
+from ai_codebase_intelligence.storage.git import (
     get_current_commit,
     get_git_root,
     is_git_repo,
@@ -40,11 +40,11 @@ class TestGetGitRoot:
 class TestGetCurrentCommit:
     """Tests for get_current_commit function."""
 
-    def test_returns_short_hash(self) -> None:
+    def test_returns_full_hash(self) -> None:
         commit = get_current_commit(
             "/Users/cdeust/Developments/anthropic/ai-architect"
         )
-        assert len(commit) == 7
+        assert len(commit) == 40
         # Should be hex characters
         assert all(c in "0123456789abcdef" for c in commit)
 

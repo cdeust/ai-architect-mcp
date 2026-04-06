@@ -26,9 +26,9 @@ def process_communities(
     if on_progress:
         on_progress("Building graph for community detection...", 0)
 
-    symbol_types = {"Function", "Class", "Method", "Interface"}
+    symbol_labels = {"Function", "Class", "Method", "Interface"}
     symbol_count = sum(
-        1 for n in knowledge_graph.iter_nodes() if n.get("label") in symbol_types
+        1 for n in knowledge_graph.iter_nodes() if n.label.value in symbol_labels
     )
     is_large = symbol_count > 10_000
 
@@ -47,30 +47,30 @@ def process_communities(
     node_degree: dict[str, int] = {}
 
     for rel in knowledge_graph.iter_relationships():
-        if rel.get("type") not in clustering_types:
+        if rel.relationship_type.value not in clustering_types:
             continue
-        if rel["sourceId"] == rel["targetId"]:
+        if rel.source_id == rel.target_id:
             continue
-        if is_large and rel.get("confidence", 1.0) < MIN_CONFIDENCE_LARGE:
+        if is_large and rel.confidence < MIN_CONFIDENCE_LARGE:
             continue
-        connected.add(rel["sourceId"])
-        connected.add(rel["targetId"])
-        node_degree[rel["sourceId"]] = node_degree.get(rel["sourceId"], 0) + 1
-        node_degree[rel["targetId"]] = node_degree.get(rel["targetId"], 0) + 1
+        connected.add(rel.source_id)
+        connected.add(rel.target_id)
+        node_degree[rel.source_id] = node_degree.get(rel.source_id, 0) + 1
+        node_degree[rel.target_id] = node_degree.get(rel.target_id, 0) + 1
 
     # Build igraph
     node_ids: list[str] = []
     id_to_idx: dict[str, int] = {}
 
     for node in knowledge_graph.iter_nodes():
-        if node.get("label") not in symbol_types:
+        if node.label.value not in symbol_labels:
             continue
-        if node["id"] not in connected:
+        if node.id not in connected:
             continue
-        if is_large and node_degree.get(node["id"], 0) < 2:
+        if is_large and node_degree.get(node.id, 0) < 2:
             continue
-        id_to_idx[node["id"]] = len(node_ids)
-        node_ids.append(node["id"])
+        id_to_idx[node.id] = len(node_ids)
+        node_ids.append(node.id)
 
     if not node_ids:
         return {
@@ -82,12 +82,12 @@ def process_communities(
     edges: list[tuple[int, int]] = []
     seen_edges: set[tuple[int, int]] = set()
     for rel in knowledge_graph.iter_relationships():
-        if rel.get("type") not in clustering_types:
+        if rel.relationship_type.value not in clustering_types:
             continue
-        if is_large and rel.get("confidence", 1.0) < MIN_CONFIDENCE_LARGE:
+        if is_large and rel.confidence < MIN_CONFIDENCE_LARGE:
             continue
-        s = id_to_idx.get(rel["sourceId"])
-        t = id_to_idx.get(rel["targetId"])
+        s = id_to_idx.get(rel.source_id)
+        t = id_to_idx.get(rel.target_id)
         if s is not None and t is not None and s != t:
             edge = (min(s, t), max(s, t))
             if edge not in seen_edges:
@@ -139,9 +139,8 @@ def _build_result(
     # Build node path lookup
     node_path: dict[str, str] = {}
     for node in knowledge_graph.iter_nodes():
-        fp = node.get("properties", {}).get("filePath", "")
-        if fp:
-            node_path[node["id"]] = fp
+        if node.file_path:
+            node_path[node.id] = node.file_path
 
     community_nodes: list[dict[str, Any]] = []
     for comm_num, member_ids in comm_members.items():

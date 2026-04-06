@@ -3,6 +3,9 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
+from ..._models.graph_types import (
+    GraphNode, GraphRelationship, NodeLabel, RelationshipType,
+)
 from ..graph.graph import create_knowledge_graph, KnowledgeGraph
 from .structure_processor import process_structure
 from .parsing_processor_seq import process_parsing
@@ -16,6 +19,7 @@ from .ast_cache import create_ast_cache
 from .filesystem_walker import walk_repository_paths, read_file_contents
 from .utils import get_language_from_filename
 from ..tree_sitter.parser_loader import is_language_available
+from ...storage.git import is_git_repo
 
 CHUNK_BYTE_BUDGET = 20 * 1024 * 1024  # 20MB
 AST_CACHE_CAP = 50
@@ -105,28 +109,28 @@ def run_pipeline_from_repo(
     community_result = process_communities(graph)
 
     for comm in community_result["communities"]:
-        graph.add_node({
-            "id": comm["id"], "label": "Community",
-            "properties": {
-                "name": comm["label"], "filePath": "",
+        graph.add_node(GraphNode(
+            id=comm["id"], label=NodeLabel.COMMUNITY,
+            name=comm["label"],
+            properties={
                 "heuristicLabel": comm["heuristicLabel"],
                 "cohesion": comm["cohesion"],
                 "symbolCount": comm["symbolCount"],
             },
-        })
+        ))
 
     for m in community_result["memberships"]:
-        graph.add_relationship({
-            "id": f"{m['nodeId']}_member_of_{m['communityId']}",
-            "type": "MEMBER_OF",
-            "sourceId": m["nodeId"], "targetId": m["communityId"],
-            "confidence": 1.0, "reason": "leiden-algorithm",
-        })
+        graph.add_relationship(GraphRelationship(
+            source_id=m["nodeId"], target_id=m["communityId"],
+            relationship_type=RelationshipType.MEMBER_OF,
+            confidence=1.0,
+            properties={"reason": "leiden-algorithm"},
+        ))
 
     # Phase 6: Processes
     progress({"phase": "processes", "percent": 94, "message": "Detecting execution flows..."})
 
-    symbol_count = sum(1 for n in graph.iter_nodes() if n.get("label") != "File")
+    symbol_count = sum(1 for n in graph.iter_nodes() if n.label != NodeLabel.FILE)
     dynamic_max = max(20, min(300, round(symbol_count / 10)))
 
     process_result = process_processes(
@@ -135,10 +139,10 @@ def run_pipeline_from_repo(
     )
 
     for proc in process_result["processes"]:
-        graph.add_node({
-            "id": proc["id"], "label": "Process",
-            "properties": {
-                "name": proc["label"], "filePath": "",
+        graph.add_node(GraphNode(
+            id=proc["id"], label=NodeLabel.PROCESS,
+            name=proc["label"],
+            properties={
                 "heuristicLabel": proc["heuristicLabel"],
                 "processType": proc["processType"],
                 "stepCount": proc["stepCount"],
@@ -146,16 +150,29 @@ def run_pipeline_from_repo(
                 "entryPointId": proc["entryPointId"],
                 "terminalId": proc["terminalId"],
             },
-        })
+        ))
 
     for step in process_result["steps"]:
-        graph.add_relationship({
-            "id": f"{step['nodeId']}_step_{step['step']}_{step['processId']}",
-            "type": "STEP_IN_PROCESS",
-            "sourceId": step["nodeId"], "targetId": step["processId"],
-            "confidence": 1.0, "reason": "trace-detection",
-            "step": step["step"],
-        })
+        graph.add_relationship(GraphRelationship(
+            source_id=step["nodeId"], target_id=step["processId"],
+            relationship_type=RelationshipType.STEP_IN_PROCESS,
+            confidence=1.0,
+            properties={"reason": "trace-detection", "step": step["step"]},
+        ))
+
+    # Phase 7: Git analytics (ownership, co-change) — conditional on git repo
+    git_analytics_result: dict[str, Any] | None = None
+    if is_git_repo(repo_path):
+        progress({"phase": "git_analytics", "percent": 96,
+                  "message": "Analyzing git history (ownership, co-change)..."})
+        from .ownership_processor import process_ownership
+        from .cochange_processor import process_cochange
+
+        git_analytics_result = {}
+        ownership_result = process_ownership(graph, repo_path)
+        git_analytics_result["ownership"] = ownership_result["stats"]
+        cochange_result = process_cochange(graph, repo_path)
+        git_analytics_result["cochange"] = cochange_result["stats"]
 
     progress({
         "phase": "complete", "percent": 100,
@@ -169,4 +186,5 @@ def run_pipeline_from_repo(
         "totalFileCount": total_files,
         "communityResult": community_result,
         "processResult": process_result,
+        "gitAnalyticsResult": git_analytics_result,
     }

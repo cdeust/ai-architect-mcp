@@ -25,7 +25,7 @@ async def context_tool(backend: Any, repo: dict[str, Any], params: dict[str, Any
     else:
         candidates = index.find_by_name(name)
         if file_path:
-            candidates = [n for n in candidates if file_path in n.get("properties", {}).get("filePath", "")]
+            candidates = [n for n in candidates if file_path in n.file_path]
         symbols = candidates[:10]
 
     if not symbols:
@@ -38,11 +38,11 @@ async def context_tool(backend: Any, repo: dict[str, Any], params: dict[str, Any
             "message": f"Found {len(symbols)} symbols matching '{name}'. Use uid or file_path to disambiguate.",
             "candidates": [
                 {
-                    "uid": s["id"],
-                    "name": s.get("properties", {}).get("name", ""),
-                    "kind": s.get("label", ""),
-                    "filePath": s.get("properties", {}).get("filePath", ""),
-                    "line": s.get("properties", {}).get("startLine", 0),
+                    "uid": s.id,
+                    "name": s.name,
+                    "kind": s.label.value,
+                    "filePath": s.file_path,
+                    "line": s.start_line,
                 }
                 for s in symbols
             ],
@@ -50,21 +50,20 @@ async def context_tool(backend: Any, repo: dict[str, Any], params: dict[str, Any
 
     # Step 3: Build full context
     sym = symbols[0]
-    sym_id = sym["id"]
-    props = sym.get("properties", {})
+    sym_id = sym.id
 
     # Categorized incoming refs
     incoming_edges = index.incoming(sym_id)
     incoming: dict[str, list[dict[str, Any]]] = {}
     for src_node, rel in incoming_edges:
-        rt = rel.get("type", "").lower()
+        rt = rel.relationship_type.value.lower()
         if rt not in ("calls", "imports", "extends", "implements"):
             continue
         entry = {
-            "uid": src_node["id"],
-            "name": src_node.get("properties", {}).get("name", ""),
-            "filePath": src_node.get("properties", {}).get("filePath", ""),
-            "kind": src_node.get("label", ""),
+            "uid": src_node.id,
+            "name": src_node.name,
+            "filePath": src_node.file_path,
+            "kind": src_node.label.value,
         }
         incoming.setdefault(rt, []).append(entry)
 
@@ -72,14 +71,14 @@ async def context_tool(backend: Any, repo: dict[str, Any], params: dict[str, Any
     outgoing_edges = index.outgoing(sym_id)
     outgoing: dict[str, list[dict[str, Any]]] = {}
     for tgt_node, rel in outgoing_edges:
-        rt = rel.get("type", "").lower()
+        rt = rel.relationship_type.value.lower()
         if rt not in ("calls", "imports", "extends", "implements"):
             continue
         entry = {
-            "uid": tgt_node["id"],
-            "name": tgt_node.get("properties", {}).get("name", ""),
-            "filePath": tgt_node.get("properties", {}).get("filePath", ""),
-            "kind": tgt_node.get("label", ""),
+            "uid": tgt_node.id,
+            "name": tgt_node.name,
+            "filePath": tgt_node.file_path,
+            "kind": tgt_node.label.value,
         }
         outgoing.setdefault(rt, []).append(entry)
 
@@ -90,11 +89,11 @@ async def context_tool(backend: Any, repo: dict[str, Any], params: dict[str, Any
         "status": "found",
         "symbol": {
             "uid": sym_id,
-            "name": props.get("name", ""),
-            "kind": sym.get("label", ""),
-            "filePath": props.get("filePath", ""),
-            "startLine": props.get("startLine", 0),
-            "endLine": props.get("endLine", 0),
+            "name": sym.name,
+            "kind": sym.label.value,
+            "filePath": sym.file_path,
+            "startLine": sym.start_line,
+            "endLine": sym.end_line,
         },
         "incoming": incoming,
         "outgoing": outgoing,
@@ -104,7 +103,8 @@ async def context_tool(backend: Any, repo: dict[str, Any], params: dict[str, Any
         ],
     }
 
-    if include_content and props.get("content"):
-        result["symbol"]["content"] = props["content"]
+    content = sym.properties.get("content", "")
+    if include_content and content:
+        result["symbol"]["content"] = content
 
     return result

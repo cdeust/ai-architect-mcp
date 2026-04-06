@@ -130,6 +130,48 @@ class StorageSection(BaseModel):
     )
 
 
+class GitAnalyticsSection(BaseModel):
+    """Git history analytics configuration.
+
+    All thresholds trace to peer-reviewed papers. None are invented.
+    Thresholds are tunable per project — no universal optimal value
+    exists (Zimmermann et al. 2005, Sec 5.3).
+    """
+
+    max_commits: int = Field(
+        default=500, ge=1,
+        description="Max commits to analyze from git log",
+    )
+    orphan_threshold: float = Field(
+        default=0.5, ge=0.0, le=1.0,
+        description=(
+            "Fraction of files orphaned before bus factor is counted. "
+            "Avelino et al. 2016, ICPC, Sec 3"
+        ),
+    )
+    minor_contributor_threshold: float = Field(
+        default=0.05, ge=0.0, le=1.0,
+        description=(
+            "Devs contributing below this fraction are minor contributors. "
+            "Bird et al. 2011, ESEC/FSE, Sec 5.1"
+        ),
+    )
+    cochange_min_support: int = Field(
+        default=3, ge=1,
+        description=(
+            "Min co-occurrences for co-change detection. "
+            "Project-dependent — Zimmermann et al. 2005, IEEE TSE, Sec 5.3"
+        ),
+    )
+    cochange_min_confidence: float = Field(
+        default=0.5, ge=0.0, le=1.0,
+        description=(
+            "Min conditional probability for co-change pair. "
+            "Project-dependent — Zimmermann et al. 2005, IEEE TSE, Sec 5.3"
+        ),
+    )
+
+
 class CodeIntelligenceConfig(BaseModel):
     """Root configuration — aggregates all sections.
 
@@ -143,3 +185,4 @@ class CodeIntelligenceConfig(BaseModel):
     process: ProcessSection = Field(default_factory=ProcessSection)
     impact: ImpactSection = Field(default_factory=ImpactSection)
     storage: StorageSection = Field(default_factory=StorageSection)
+    git_analytics: GitAnalyticsSection = Field(default_factory=GitAnalyticsSection)

@@ -154,7 +154,7 @@ class TestProcessDetection:
                 name="MyClass", file_path="cls.py",
             ),
             GraphNode(
-                id="var1", label=NodeLabel.VARIABLE,
+                id="var1", label=NodeLabel.CONST,  # VARIABLE doesn't exist; CONST is non-callable
                 name="config", file_path="config.py",
             ),
         ]
