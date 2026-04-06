@@ -7,6 +7,7 @@ from typing import Any
 from ai_architect_mcp._verification.hor_rules.engine import HORRuleEngine
 from ai_architect_mcp._app import mcp
 from ai_architect_mcp._observability.instrumentation import observe_tool_call
+from ai_architect_mcp._tools._coercion import coerce_dict
 
 _engine: HORRuleEngine | None = None
 
@@ -24,7 +25,7 @@ def _get_engine() -> HORRuleEngine:
 )
 @observe_tool_call
 async def ai_architect_run_hor_rules(
-    artifact: dict[str, Any],
+    artifact: dict[str, Any] | str,
     base_score: float = 1.0,
 ) -> dict[str, Any]:
     """Run all 64 HOR rules against an artifact.
@@ -37,7 +38,7 @@ async def ai_architect_run_hor_rules(
         Dict with results list, adjusted_score, and summary.
     """
     engine = _get_engine()
-    results = await engine.run_all(artifact)
+    results = await engine.run_all(coerce_dict(artifact))
     adjusted = engine.calculate_adjusted_score(base_score, results)
     return {
         "results": [r.model_dump(mode="json") for r in results],
@@ -54,7 +55,7 @@ async def ai_architect_run_hor_rules(
 @observe_tool_call
 async def ai_architect_run_hor_category(
     category: str,
-    artifact: dict[str, Any],
+    artifact: dict[str, Any] | str,
 ) -> dict[str, Any]:
     """Run HOR rules in a specific category.
 
@@ -66,7 +67,7 @@ async def ai_architect_run_hor_category(
         Dict with category results.
     """
     engine = _get_engine()
-    results = await engine.run_by_category(category, artifact)
+    results = await engine.run_by_category(category, coerce_dict(artifact))
     return {
         "category": category,
         "results": [r.model_dump(mode="json") for r in results],
@@ -81,7 +82,7 @@ async def ai_architect_run_hor_category(
 @observe_tool_call
 async def ai_architect_run_hor_single(
     rule_id: int,
-    artifact: dict[str, Any],
+    artifact: dict[str, Any] | str,
 ) -> dict[str, Any]:
     """Run a single HOR rule by ID.
 
@@ -93,5 +94,5 @@ async def ai_architect_run_hor_single(
         HORRuleResult as a dictionary.
     """
     engine = _get_engine()
-    result = await engine.run_single(rule_id, artifact)
+    result = await engine.run_single(rule_id, coerce_dict(artifact))
     return result.model_dump(mode="json")

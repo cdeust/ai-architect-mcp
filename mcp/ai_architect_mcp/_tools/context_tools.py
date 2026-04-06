@@ -7,6 +7,7 @@ from typing import Any
 from ai_architect_mcp._context.handoff import HandoffDocument
 from ai_architect_mcp._app import mcp
 from ai_architect_mcp._observability.instrumentation import observe_tool_call
+from ai_architect_mcp._tools._coercion import coerce_dict
 from ai_architect_mcp._tools._composition import get_context
 
 
@@ -38,20 +39,21 @@ async def ai_architect_load_context(
 async def ai_architect_save_context(
     stage_id: int,
     finding_id: str,
-    artifact: dict[str, Any],
+    artifact: dict[str, Any] | str,
 ) -> dict[str, str]:
     """Save a stage artifact for a finding.
 
     Args:
         stage_id: Pipeline stage number (0-10).
         finding_id: Unique finding identifier.
-        artifact: The artifact data to save.
+        artifact: The artifact data to save. Accepts either a dict or
+            a JSON-encoded string (for clients that serialize objects).
 
     Returns:
         Confirmation with stage_id and finding_id.
     """
     ctx = get_context()
-    await ctx.save(stage_id, finding_id, artifact)
+    await ctx.save(stage_id, finding_id, coerce_dict(artifact))
     return {"status": "saved", "stage_id": str(stage_id), "finding_id": finding_id}
 
 

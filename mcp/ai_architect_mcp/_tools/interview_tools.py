@@ -17,6 +17,7 @@ from ai_architect_mcp._interview.models import (
 from ai_architect_mcp._interview.scorers import score_dimension
 from ai_architect_mcp._app import mcp
 from ai_architect_mcp._observability.instrumentation import observe_tool_call
+from ai_architect_mcp._tools._coercion import coerce_dict
 
 # Module-level cache for recent interview results keyed by finding_id.
 _result_cache: dict[str, InterviewResult] = {}
@@ -47,7 +48,7 @@ def _store_result(result: InterviewResult) -> None:
 @observe_tool_call
 async def ai_architect_score_dimension(
     dimension: str,
-    artifact: dict[str, Any],
+    artifact: dict[str, Any] | str,
 ) -> dict[str, Any]:
     """Score a single PRD dimension.
 
@@ -69,7 +70,7 @@ async def ai_architect_score_dimension(
         msg = f"Invalid dimension '{dimension}' — valid values: {valid}"
         raise ValueError(msg) from None
 
-    result = score_dimension(dim_type, artifact)
+    result = score_dimension(dim_type, coerce_dict(artifact))
     return result.model_dump(mode="json")
 
 
@@ -83,7 +84,7 @@ async def ai_architect_score_dimension(
 )
 @observe_tool_call
 async def ai_architect_run_interview_gate(
-    artifact: dict[str, Any],
+    artifact: dict[str, Any] | str,
     finding_id: str = "UNKNOWN",
 ) -> dict[str, Any]:
     """Run the full Plan Interview gate on a PRD artifact.
@@ -99,7 +100,7 @@ async def ai_architect_run_interview_gate(
         Serialised InterviewResult as a dictionary.
     """
     config = InterviewConfig()
-    result = run_full_interview(artifact, config, finding_id)
+    result = run_full_interview(coerce_dict(artifact), config, finding_id)
     _store_result(result)
     return result.model_dump(mode="json")
 
