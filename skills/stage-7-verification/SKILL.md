@@ -209,6 +209,42 @@ ai_architect_append_audit_event(event_data={
 })
 ```
 
+## Cortex memory integration
+
+### After verification — store failure patterns for proactive detection
+
+**WHEN:** After the verification decision (step 6) is made, regardless of pass or fail.
+**WHY:** Verification failures reveal systemic weaknesses in the pipeline's code generation. If Stage 7 repeatedly fails on the same HOR rules, the same build errors, or the same graph violations, future runs should check for these patterns proactively in Stage 6 before reaching verification. Storing pass patterns is also valuable — it confirms which approaches produce clean implementations.
+**HOW:**
+
+On failure (any blocking gate fails):
+```
+cortex:remember(
+  content="Verification FAILURE for finding {findingID} in repo {target_repo}: failed_hor_rules={list_of_failed_rule_ids}, build_errors={build_error_summary}, graph_violations={cycle_or_orphan_details}, compound_score={score}, retry_number={current_retry}",
+  tags=["verification-failure", "repo:{target_repo_name}", "finding:{findingID}", "stage:7"]
+)
+```
+
+On pass (all gates pass):
+```
+cortex:remember(
+  content="Verification PASS for finding {findingID} in repo {target_repo}: hor_pass_rate={pass_count}/64, compound_score={score}, total_7_to_6_retries={retry_count}, close_calls={rules_that_barely_passed}",
+  tags=["verification-pass", "repo:{target_repo_name}", "finding:{findingID}", "stage:7"]
+)
+```
+
+What to store on failure:
+- Exact HOR rule IDs that failed — enables pattern detection across runs (e.g., "security rules fail 40% of the time")
+- Build error categories (missing imports, type mismatches, unresolved references) — enables Stage 6 to add pre-checks
+- Graph violations (which modules formed cycles, which IDs were orphaned)
+- The retry number — first failure vs third failure tells different stories
+
+What to store on pass:
+- Rules that barely passed (score close to threshold) — these are fragile and may fail on the next run
+- Total retries needed — zero retries means the implementation approach was sound; three retries means it was marginal
+
+**NOTE:** This stage is deterministic. The `cortex:remember` call happens AFTER all deterministic checks complete. It does not influence the pass/fail decision. It is a post-decision recording step only.
+
 ## OODA Checkpoint
 
 ```

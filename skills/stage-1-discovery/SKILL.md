@@ -38,6 +38,26 @@ Missing Stage 0 health report = BLOCK. Do not discover without a green health ch
 | Active findings queue | list | StageContext | NO — empty on first run |
 | ExperiencePatterns | list | `ai_architect_list_experience_patterns` | NO — enrichment only |
 
+## Cortex memory integration
+
+### Before generating findings — recall past discoveries
+
+**WHEN:** After loading prerequisites (step 4 of "Before you start") and before source ingestion.
+**WHY:** Previous pipeline runs may have already discovered findings for this repo. Some may have been resolved (shipped via PR), some may still be open, and some may have been rejected as irrelevant. Rediscovering resolved findings wastes pipeline capacity. Rediscovering rejected findings repeats a known dead end.
+**HOW:**
+
+```
+cortex:recall(query="discovery findings for repo {target_repo}", limit=15)
+cortex:recall(query="rejected findings low relevance for repo {target_repo}", limit=10)
+```
+
+If results are returned:
+- Cross-reference recalled findings with the current active findings queue (from step 4)
+- If a recalled finding was already shipped (PR merged), mark it as resolved — do not resurface
+- If a recalled finding was rejected (relevance < 0.6 after retry), check if new source material changes the relevance — only resurface if new evidence exists
+- If a recalled finding is still open and in the active queue, skip it during deduplication (step 4 of Operations)
+- Include recalled finding IDs in the deduplication check to avoid redundant work
+
 ## Operations
 
 ### 1. Source ingestion (parallel fan-out)

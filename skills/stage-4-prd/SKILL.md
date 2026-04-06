@@ -53,6 +53,44 @@ Missing Stage 1 or Stage 2 = BLOCK. PRD requires finding details and impact anal
 | PRDExample records | list | StageContext query | NO — few-shot seed |
 | ClarificationReport | MD | StageContext[stage-4] | NO on first run, YES on retry (permanent, reused) |
 
+## Cortex memory integration
+
+### Before PRD generation — recall past PRDs and architectural decisions
+
+**WHEN:** After loading all upstream artifacts (steps 1-9 of "Before you start") and before operations begin.
+**WHY:** Past PRDs for this repo established architectural patterns, naming conventions, and design decisions. A new PRD that contradicts an established pattern without justification creates inconsistency. Past PRD failures (score < 0.85, orphan IDs, graph cycles) indicate pitfalls to avoid.
+**HOW:**
+
+```
+cortex:recall(query="PRD generation architectural decisions patterns for repo {target_repo}", limit=15)
+cortex:recall(query="PRD failures retry orphan IDs graph cycles for repo {target_repo}", limit=10)
+```
+
+If results are returned:
+- Check for established architectural patterns (port/adapter boundaries, module naming, dependency directions) — the new PRD must not contradict them without explicit justification in the PRD overview
+- Check for past PRD failures — if a specific HOR rule or graph violation caused retries in past runs, proactively address it during generation (e.g., ensure traceability IDs are complete before running HOR rules)
+- Check for naming conventions and module organization established by prior PRDs — maintain consistency
+- Feed relevant recalled decisions into the enhanced prompt (step 5) as additional context
+
+### After PRD generation — store key architectural decisions
+
+**WHEN:** After the PRD passes verification (compound score >= 0.85) and before updating pipeline state.
+**WHY:** The architectural decisions made in this PRD become constraints for future PRDs. Storing them ensures consistency across pipeline runs.
+**HOW:**
+
+```
+cortex:remember(
+  content="PRD for finding {findingID} in repo {target_repo}: architecture={key_architecture_decisions}, new_ports={new_port_interfaces}, affected_modules={module_list}, compound_score={score}, retry_count={retries}, patterns_established={new_patterns}",
+  tags=["prd", "repo:{target_repo_name}", "finding:{findingID}", "stage:4"]
+)
+```
+
+What to store:
+- Key architectural decisions (new ports defined, adapter changes, module splits)
+- Which HOR rules were close to failing — these are fragile areas for future PRDs
+- The compound score and retry count — tracks PRD quality trends over time
+- Any new patterns established (naming conventions, interface shapes, dependency structures)
+
 ## Operations
 
 ### 1. Load few-shot examples (zero API cost via Foundation Models)
