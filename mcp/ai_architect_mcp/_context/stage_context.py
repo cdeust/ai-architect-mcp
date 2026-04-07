@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from ai_architect_mcp._context.artifact_store import ArtifactStore
+from ai_architect_mcp._context.stage_prerequisites import check_prerequisites
 
 
 class StageContext:
@@ -72,7 +73,15 @@ class StageContext:
         Raises:
             ValueError: If stage_id is out of range.
             ContextViolationError: If writing backward.
+            StagePrerequisiteViolation: If prior stages have not produced
+                artifacts for this finding. The pipeline must run strictly
+                in order.
         """
+        # Validate stage range first so out-of-range raises ValueError
+        # (matching legacy behavior). Then check prerequisites.
+        self._store._validate_stage_id(stage_id)
+        completed = set(await self._store.list_stages(finding_id))
+        check_prerequisites(stage_id, finding_id, completed)
         await self._store.store(stage_id, finding_id, content)
         if self._observability is not None:
             from ai_architect_mcp._observability.instrumentation import (
@@ -120,7 +129,14 @@ class StageContext:
             stage_id: Pipeline stage number (0-10).
             finding_id: Unique finding identifier.
             artifact: The artifact to persist.
+
+        Raises:
+            StagePrerequisiteViolation: If prior stages have not produced
+                artifacts for this finding.
         """
+        self._store._validate_stage_id(stage_id)
+        completed = set(await self._store.list_stages(finding_id))
+        check_prerequisites(stage_id, finding_id, completed)
         await self._store.store(stage_id, finding_id, artifact)
 
     async def query_artifacts(

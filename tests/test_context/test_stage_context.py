@@ -23,6 +23,8 @@ class TestStageContext:
 
     @pytest.mark.asyncio
     async def test_save_and_load(self, context: StageContext) -> None:
+        # Stage prerequisites: stage 1 requires stage 0 to exist first.
+        await context.save(0, "FIND-001", {"health": "ok"})
         artifact = {"signals": 5}
         await context.save(1, "FIND-001", artifact)
         result = await context.load(1, "FIND-001")
@@ -35,16 +37,18 @@ class TestStageContext:
 
     @pytest.mark.asyncio
     async def test_forward_only_enforcement(self, context: StageContext) -> None:
-        await context.save(0, "FIND-001", {"stage": 0})
-        await context.save(5, "FIND-001", {"stage": 5})
+        # Walk forward through prerequisites first, then check that
+        # writing to an already-passed earlier stage is rejected.
+        for sid in range(6):  # 0..5
+            await context.save(sid, "FIND-001", {"stage": sid})
         with pytest.raises(ContextViolationError):
             await context.save(2, "FIND-001", {"stage": 2})
 
     @pytest.mark.asyncio
     async def test_query(self, context: StageContext) -> None:
-        await context.save(0, "FIND-001", {"health": "ok"})
-        await context.save(1, "FIND-001", {"signals": 3})
-        results = await context.query("FIND-001", "health")
+        await context.save(0, "FIND-002", {"health": "ok"})
+        await context.save(1, "FIND-002", {"signals": 3})
+        results = await context.query("FIND-002", "health")
         assert len(results) == 1
 
     @pytest.mark.asyncio
