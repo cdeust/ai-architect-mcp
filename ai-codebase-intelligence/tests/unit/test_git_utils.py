@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+import subprocess
+from pathlib import Path
+
+import pytest
+
 from ai_codebase_intelligence.storage.git import (
     get_current_commit,
     get_git_root,
@@ -9,14 +14,34 @@ from ai_codebase_intelligence.storage.git import (
 )
 
 
+@pytest.fixture
+def real_repo(tmp_path: Path) -> Path:
+    """Create an isolated git repo with a single commit."""
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"],
+        cwd=tmp_path, check=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=tmp_path, check=True,
+    )
+    (tmp_path / "README.md").write_text("test\n")
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "init"],
+        cwd=tmp_path, check=True,
+    )
+    return tmp_path
+
+
 class TestIsGitRepo:
     """Tests for is_git_repo function."""
 
-    def test_current_repo(self) -> None:
-        # The ai-architect repo is a git repo
-        assert is_git_repo("/Users/cdeust/Developments/anthropic/ai-architect") is True
+    def test_current_repo(self, real_repo: Path) -> None:
+        assert is_git_repo(str(real_repo)) is True
 
-    def test_non_repo(self, tmp_path: str) -> None:
+    def test_non_repo(self, tmp_path: Path) -> None:
         assert is_git_repo(str(tmp_path)) is False
 
     def test_nonexistent_path(self) -> None:
@@ -26,12 +51,12 @@ class TestIsGitRepo:
 class TestGetGitRoot:
     """Tests for get_git_root function."""
 
-    def test_from_subdir(self) -> None:
-        root = get_git_root(
-            "/Users/cdeust/Developments/anthropic/ai-architect/mcp"
-        )
+    def test_from_subdir(self, real_repo: Path) -> None:
+        sub = real_repo / "sub"
+        sub.mkdir()
+        root = get_git_root(str(sub))
         assert root is not None
-        assert root.endswith("ai-architect")
+        assert Path(root).resolve() == real_repo.resolve()
 
     def test_nonexistent(self) -> None:
         assert get_git_root("/nonexistent/path") is None
@@ -40,12 +65,9 @@ class TestGetGitRoot:
 class TestGetCurrentCommit:
     """Tests for get_current_commit function."""
 
-    def test_returns_full_hash(self) -> None:
-        commit = get_current_commit(
-            "/Users/cdeust/Developments/anthropic/ai-architect"
-        )
+    def test_returns_full_hash(self, real_repo: Path) -> None:
+        commit = get_current_commit(str(real_repo))
         assert len(commit) == 40
-        # Should be hex characters
         assert all(c in "0123456789abcdef" for c in commit)
 
     def test_nonexistent_returns_empty(self) -> None:

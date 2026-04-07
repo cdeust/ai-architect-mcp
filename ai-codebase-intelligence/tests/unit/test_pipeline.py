@@ -49,11 +49,13 @@ class TestChunkManager:
 class TestFilesystemWalker:
     """Tests for file discovery."""
 
-    def test_discover_in_repo(self) -> None:
-        # Discover files in the ai-codebase-intelligence package itself
-        repo = "/Users/cdeust/Developments/anthropic/ai-architect/ai-codebase-intelligence"
-        files = discover_files(repo)
-        assert len(files) > 0
+    def test_discover_in_repo(self, tmp_path: Path) -> None:
+        # Build a tiny tree, discover its .py files
+        (tmp_path / "a.py").write_text("x = 1\n")
+        (tmp_path / "sub").mkdir()
+        (tmp_path / "sub" / "b.py").write_text("y = 2\n")
+        files = discover_files(str(tmp_path))
+        assert len(files) == 2
         assert all(f.endswith(".py") for f in files)
 
     def test_discover_nonexistent(self) -> None:
