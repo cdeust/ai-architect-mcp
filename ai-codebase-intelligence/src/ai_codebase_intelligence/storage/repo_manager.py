@@ -169,14 +169,22 @@ def unregister_repo(repo_path: str) -> None:
 
 
 def list_registered_repos(validate: bool = False) -> list[dict[str, Any]]:
+    """List repos in the global registry.
+
+    When validate=True, drops entries whose storage directory shows no
+    sign of an index. A repo is considered indexed if it has either a
+    `meta.json` (legacy marker) or an `index.db` (current SQLite store).
+    """
     entries = read_registry()
     if not validate:
         return entries
 
     valid: list[dict[str, Any]] = []
     for entry in entries:
-        meta_path = os.path.join(entry.get("storagePath", ""), "meta.json")
-        if os.path.exists(meta_path):
+        storage = entry.get("storagePath", "")
+        meta_path = os.path.join(storage, "meta.json")
+        db_path = os.path.join(storage, "index.db")
+        if os.path.exists(meta_path) or os.path.exists(db_path):
             valid.append(entry)
 
     if len(valid) != len(entries):

@@ -154,7 +154,7 @@ async def tool_store(repo_path: str) -> str:
         return json.dumps({"error": "No graph data. Call parse first."})
 
     from ..core.storage.repo_store import store_and_index
-    from ..storage.repo_manager import get_storage_paths, register_repo
+    from ..storage.repo_manager import get_storage_paths, register_repo, save_meta
     from ..storage.git import get_current_commit
 
     paths = get_storage_paths(repo_path)
@@ -177,9 +177,16 @@ async def tool_store(repo_path: str) -> str:
         "communities": (community_result.get("stats") or {}).get("totalCommunities", 0),
         "processes": (process_result.get("stats") or {}).get("totalProcesses", 0),
     }
+    indexed_at = time.strftime("%Y-%m-%dT%H:%M:%SZ")
     register_repo(repo_path, {
-        "indexedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "indexedAt": indexed_at,
         "lastCommit": commit, "stats": stats,
+    })
+    save_meta(paths["storagePath"], {
+        "repoPath": os.path.abspath(repo_path),
+        "lastCommit": commit,
+        "indexedAt": indexed_at,
+        "stats": stats,
     })
 
     db_size = os.path.getsize(db_path) if os.path.exists(db_path) else 0
