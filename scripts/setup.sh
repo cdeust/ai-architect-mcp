@@ -42,17 +42,26 @@ info "Python $PY_VERSION detected"
   || fail "Missing CLAUDE.md — run from the ai-architect repo root."
 info "Repository structure verified"
 
-# ── 3. Install MCP server ─────────────────────────────────────────────────
+# ── 3. Install MCP servers ────────────────────────────────────────────────
 
 pip install -e "$REPO_ROOT/mcp/" --quiet 2>/dev/null \
   || pip install -e "$REPO_ROOT/mcp/" 2>&1
-info "MCP server installed (ai-architect-mcp)"
+info "ai-architect MCP server installed (pipeline orchestration)"
 
 # Verify entry point works
 if command -v ai_architect_mcp &>/dev/null; then
   info "Entry point 'ai_architect_mcp' available on PATH"
 else
   warn "Entry point not on PATH — use 'python3 -m ai_architect_mcp.server' instead"
+fi
+
+# Install ai-codebase-intelligence (the typed graph engine + git analytics)
+if [ -f "$REPO_ROOT/ai-codebase-intelligence/pyproject.toml" ]; then
+  pip install -e "$REPO_ROOT/ai-codebase-intelligence/" --quiet 2>/dev/null \
+    || pip install -e "$REPO_ROOT/ai-codebase-intelligence/" 2>&1
+  info "ai-codebase-intelligence MCP server installed (17 tools)"
+else
+  warn "ai-codebase-intelligence/ not found — codebase tools will be unavailable"
 fi
 
 # ── 4. Install skills into Claude Code ─────────────────────────────────────
