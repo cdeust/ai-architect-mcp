@@ -1,0 +1,29 @@
+{
+  "name": "ai-architect-plugins",
+  "owner": {
+    "name": "Clement Deust",
+    "email": "admin@ai-architect.tools"
+  },
+  "metadata": {
+    "description": "Autonomous software engineering pipeline for Claude Code — 11 stages, 49 MCP tools, 64 verification rules",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "ai-architect",
+      "source": "./",
+      "description": "Autonomous software engineering pipeline built on Anthropic best practices. 11 pipeline stages (Stage 0 HealthCheck → Stage 10 PullRequest), 49 MCP tools, 64 HOR verification rules, 10 implemented algorithms (5 verification + 5 prompting). Skills define WHAT, tools define HOW, hooks enforce constraints.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Clement Deust",
+        "email": "admin@ai-architect.tools"
+      },
+      "homepage": "https://github.com/cdeust/ai-architect-mcp",
+      "repository": "https://github.com/cdeust/ai-architect-mcp",
+      "license": "MIT",
+      "keywords": ["mcp", "ai-architect", "verification", "prd", "autonomous-engineering", "code-generation", "claude-code", "anthropic"],
+      "category": "development",
+      "runtime": ["cli"]
+    }
+  ]
+}

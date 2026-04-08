@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ai-architect-mcp"
+name = "ai-automated-pipeline"
 version = "0.1.0"
 description = "Autonomous software engineering pipeline — 49 MCP tools, 64 verification rules, 11 pipeline stages"
 readme = "../README.md"
