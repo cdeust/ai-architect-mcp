@@ -13,6 +13,15 @@ class TestContextTools:
             ai_architect_save_context,
         )
 
+        # Stage 0 prerequisite must exist before Stage 1 (commit e27df1b
+        # enforces strict forward-only ordering on StageContext.save).
+        stage0 = await ai_architect_save_context(
+            stage_id=0,
+            finding_id="test-finding-001",
+            artifact={"health": "ok"},
+        )
+        assert stage0["status"] == "saved"
+
         save_result = await ai_architect_save_context(
             stage_id=1,
             finding_id="test-finding-001",

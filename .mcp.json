@@ -1,18 +1,12 @@
 {
   "mcpServers": {
     "ai-architect": {
-      "command": "python3",
-      "args": ["-m", "ai_architect_mcp.server"],
-      "env": {
-        "PYTHONPATH": "/Users/cdeust/Developments/anthropic/ai-architect/mcp"
-      }
+      "command": "uvx",
+      "args": ["--python", "3.12", "--from", "./mcp", "ai_architect_mcp"]
     },
-    "codebase-intelligence": {
-      "command": "python3",
-      "args": ["-m", "ai_codebase_intelligence"],
-      "env": {
-        "PYTHONPATH": "/Users/cdeust/Developments/anthropic/ai-architect/ai-codebase-intelligence/src"
-      }
+    "ai-codebase-intelligence": {
+      "command": "uvx",
+      "args": ["--python", "3.12", "--from", "./ai-codebase-intelligence", "ai_codebase_intelligence_mcp"]
     }
   }
 }

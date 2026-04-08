@@ -1,46 +1,19 @@
 {
   "name": "ai-codebase-intelligence",
+  "description": "Language-agnostic codebase intelligence — 17 MCP tools, tree-sitter parsing for 13 languages, typed Pydantic graph API, BM25 + RRF hybrid search, and 5 science-backed git analytics (ownership, bus factor, churn, cochange, dead code).",
   "version": "0.1.0",
-  "description": "Language-agnostic codebase intelligence — index, search, and analyze code across 13 languages",
-  "author": "AI Architect",
-  "homepage": "https://github.com/ai-architect-tools/ai-codebase-intelligence",
+  "author": {
+    "name": "Clement Deust",
+    "email": "admin@ai-architect.tools"
+  },
+  "homepage": "https://github.com/cdeust/ai-architect-mcp",
+  "repository": "https://github.com/cdeust/ai-architect-mcp",
   "license": "MIT",
-  "capabilities": {
-    "mcp_server": true,
-    "hooks": true,
-    "skills": true
-  },
-  "mcp": {
-    "command": "python3",
-    "args": ["-m", "ai_codebase_intelligence.server"],
-    "env": {
-      "PYTHONPATH": "src"
+  "keywords": ["mcp", "codebase-intelligence", "static-analysis", "tree-sitter", "graph", "git-analytics", "claude-code", "anthropic"],
+  "mcpServers": {
+    "ai-codebase-intelligence": {
+      "command": "uvx",
+      "args": ["--python", "3.12", "--from", "ai-automated-codebase-intelligence", "ai_codebase_intelligence_mcp"]
     }
-  },
-  "hooks": {
-    "config": "hooks/hooks.json"
-  },
-  "skills": [
-    "skills/exploring/SKILL.md",
-    "skills/debugging/SKILL.md",
-    "skills/impact-analysis/SKILL.md",
-    "skills/pr-review/SKILL.md",
-    "skills/refactoring/SKILL.md",
-    "skills/cli/SKILL.md",
-    "skills/guide/SKILL.md"
-  ],
-  "requirements": {
-    "python": ">=3.11",
-    "packages": [
-      "mcp>=1.0",
-      "tree-sitter>=0.22",
-      "tree-sitter-languages>=1.10",
-      "kuzu>=0.4",
-      "pydantic>=2.0",
-      "leidenalg>=0.10",
-      "python-igraph>=0.11",
-      "gitpython>=3.1",
-      "typer>=0.12"
-    ]
   }
 }

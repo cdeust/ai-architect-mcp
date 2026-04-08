@@ -66,16 +66,25 @@ class TestPipelineFlow:
 
     @pytest.mark.asyncio
     async def test_forward_only_enforced(self) -> None:
-        """Verify context rejects backward writes."""
+        """Verify context rejects backward writes.
+
+        Per commit e27df1b, stages must be saved in strict order
+        (0 → 1 → 2 → 3). Drive the pipeline forward to stage 3, then
+        attempt a backward write to stage 1 — that must raise
+        `ContextViolationError` (not `StagePrerequisiteViolation`,
+        which is for forward skips).
+        """
         store = ArtifactStore()
         ctx = StageContext(store=store)
 
         await ctx.save(0, "FIND-001", {"stage": 0})
+        await ctx.save(1, "FIND-001", {"stage": 1})
+        await ctx.save(2, "FIND-001", {"stage": 2})
         await ctx.save(3, "FIND-001", {"stage": 3})
 
         from ai_architect_mcp._context.artifact_store import ContextViolationError
         with pytest.raises(ContextViolationError):
-            await ctx.save(1, "FIND-001", {"stage": 1})
+            await ctx.save(1, "FIND-001", {"stage": 1, "backward": True})
 
     @pytest.mark.asyncio
     async def test_query_across_stages(self) -> None:
