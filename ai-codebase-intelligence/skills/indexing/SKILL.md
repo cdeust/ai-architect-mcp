@@ -45,7 +45,7 @@ ai_architect_codebase_store(repo_path="/path/to/repo")
 ```
 Returns: db_path, db_size_mb, node/edge counts.
 
-**If this fails:** SQLite write error — check disk space and permissions on .gitnexus/ directory.
+**If this fails:** SQLite write error — check disk space and permissions on .codebase-intelligence/ directory.
 
 ### Convenience: Full Pipeline
 ```
@@ -67,6 +67,6 @@ If results are empty, the FTS index may not have built. Call `store` again.
 |-------|--------|
 | "No files scanned" | Wrong repo_path. Check it's absolute and exists. |
 | Parse returns 0 nodes | Language not supported or all files too large. Check scan language breakdown. |
-| Store fails | Disk full or permissions. Check .gitnexus/ is writable. |
+| Store fails | Disk full or permissions. Check .codebase-intelligence/ is writable. |
 | Query returns empty after index | FTS index didn't build. Re-run store. |
 | Community count is 0 | leidenalg/igraph not installed. Install: `pip install leidenalg python-igraph` |

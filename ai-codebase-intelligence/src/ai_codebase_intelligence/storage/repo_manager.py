@@ -96,32 +96,15 @@ def get_global_registry_path() -> str:
     return os.path.join(get_global_dir(), "registry.json")
 
 
-def _legacy_registry_paths() -> list[str]:
-    """Legacy registry paths from prior rename.
-
-    Supports transparent migration from old storage directory name.
-    Checked in order; first file that exists wins.
-    """
-    home = str(Path.home())
-    return [os.path.join(home, ".gitnexus", "registry.json")]
-
-
 def read_registry() -> list[dict[str, Any]]:
-    """Read the global repo registry.
-
-    Falls back to legacy registry paths if the canonical path is missing,
-    so a daemon running old code still sees repos after migration.
-    """
-    primary = get_global_registry_path()
-    candidates = [primary, *_legacy_registry_paths()]
-    for path in candidates:
-        try:
-            with open(path, encoding="utf-8") as f:
-                data = json.load(f)
-            if isinstance(data, list) and data:
-                return data
-        except (OSError, json.JSONDecodeError):
-            continue
+    """Read the global repo registry."""
+    try:
+        with open(get_global_registry_path(), encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, list):
+            return data
+    except (OSError, json.JSONDecodeError):
+        pass
     return []
 
 
