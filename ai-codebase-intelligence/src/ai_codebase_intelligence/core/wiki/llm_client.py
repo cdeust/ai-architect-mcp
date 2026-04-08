@@ -18,18 +18,18 @@ def resolve_llm_config(overrides: dict[str, Any] | None = None) -> dict[str, Any
     return {
         "apiKey": (
             ov.get("apiKey")
-            or os.environ.get("GITNEXUS_API_KEY")
+            or os.environ.get("CODEBASE_INTELLIGENCE_API_KEY")
             or os.environ.get("OPENAI_API_KEY")
             or saved.get("apiKey", "")
         ),
         "baseUrl": (
             ov.get("baseUrl")
-            or os.environ.get("GITNEXUS_LLM_BASE_URL")
+            or os.environ.get("CODEBASE_INTELLIGENCE_LLM_BASE_URL")
             or saved.get("baseUrl", "https://openrouter.ai/api/v1")
         ),
         "model": (
             ov.get("model")
-            or os.environ.get("GITNEXUS_MODEL")
+            or os.environ.get("CODEBASE_INTELLIGENCE_MODEL")
             or saved.get("model", "minimax/minimax-m2.5")
         ),
         "maxTokens": ov.get("maxTokens", 16384),
