@@ -76,7 +76,7 @@ def process_calls(
             if name_node is None:
                 continue
 
-            called_name = name_node.text.decode("utf-8") if name_node.text else ""
+            called_name = name_node.text.decode("utf-8", errors="replace") if name_node.text else ""
             if called_name in BUILT_IN_NAMES:
                 continue
 

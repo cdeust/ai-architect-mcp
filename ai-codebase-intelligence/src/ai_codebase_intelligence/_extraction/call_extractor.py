@@ -115,16 +115,16 @@ def _extract_python_call(
     receiver = ""
 
     if func_node.type == "identifier":
-        name = func_node.text.decode("utf-8")
+        name = func_node.text.decode("utf-8", errors="replace")
     elif func_node.type == "attribute":
         obj = func_node.child_by_field_name("object")
         attr = func_node.child_by_field_name("attribute")
         if attr is not None:
-            name = attr.text.decode("utf-8")
+            name = attr.text.decode("utf-8", errors="replace")
         if obj is not None:
-            receiver = obj.text.decode("utf-8")
+            receiver = obj.text.decode("utf-8", errors="replace")
     else:
-        name = func_node.text.decode("utf-8")
+        name = func_node.text.decode("utf-8", errors="replace")
 
     args_node = node.child_by_field_name("arguments")  # type: ignore[union-attr]
     arg_count = 0

@@ -84,7 +84,7 @@ def process_parsing_sequential(
             if name_node is None and "definition.constructor" not in capture_map:
                 continue
 
-            node_name = name_node.text.decode("utf-8") if name_node and name_node.text else "init"
+            node_name = name_node.text.decode("utf-8", errors="replace") if name_node and name_node.text else "init"
             node_label = _get_label(capture_map)
 
             definition_node = _get_definition_node(capture_map)

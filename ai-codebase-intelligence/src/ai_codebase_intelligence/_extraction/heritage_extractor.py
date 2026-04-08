@@ -82,7 +82,7 @@ def _extract_python_heritage(
     name_node = node.child_by_field_name("name")  # type: ignore[union-attr]
     if name_node is None:
         return
-    class_name = name_node.text.decode("utf-8")
+    class_name = name_node.text.decode("utf-8", errors="replace")
 
     graph_node = node_map.get(class_name)
     if graph_node is None:
@@ -93,7 +93,7 @@ def _extract_python_heritage(
         return
 
     for child in superclasses.named_children:
-        parent_name = child.text.decode("utf-8")
+        parent_name = child.text.decode("utf-8", errors="replace")
         if parent_name == "object":
             continue
         out.append(
@@ -125,7 +125,7 @@ def _extract_ts_heritage(
     name_node = node.child_by_field_name("name")  # type: ignore[union-attr]
     if name_node is None:
         return
-    class_name = name_node.text.decode("utf-8")
+    class_name = name_node.text.decode("utf-8", errors="replace")
 
     graph_node = node_map.get(class_name)
     if graph_node is None:
@@ -138,7 +138,7 @@ def _extract_ts_heritage(
         elif child_type == "extends_type_clause":
             _extract_extends_clause(child, graph_node.id, file_path, out)
         elif child_type == "superclass":
-            parent_text = child.text.decode("utf-8")
+            parent_text = child.text.decode("utf-8", errors="replace")
             out.append(
                 HeritageInfo(
                     child_id=graph_node.id,
@@ -173,7 +173,7 @@ def _extract_heritage_clause(
             continue
 
         for value_node in child.named_children:
-            parent_text = value_node.text.decode("utf-8")
+            parent_text = value_node.text.decode("utf-8", errors="replace")
             out.append(
                 HeritageInfo(
                     child_id=child_id,
@@ -199,7 +199,7 @@ def _extract_extends_clause(
         out: Accumulator for heritage records.
     """
     for child in clause_node.named_children:  # type: ignore[union-attr]
-        parent_text = child.text.decode("utf-8")
+        parent_text = child.text.decode("utf-8", errors="replace")
         out.append(
             HeritageInfo(
                 child_id=child_id,

@@ -168,7 +168,7 @@ class TreeSitterParser(ParserPort):
             if not name_node and "definition.constructor" not in cm:
                 continue
 
-            node_name = name_node.text.decode("utf-8") if name_node and name_node.text else "init"
+            node_name = name_node.text.decode("utf-8", errors="replace") if name_node and name_node.text else "init"
             node_label = NodeLabel.VARIABLE
             for cap_key, label in _CAPTURE_TO_LABEL.items():
                 if cap_key in cm:
@@ -229,7 +229,7 @@ class TreeSitterParser(ParserPort):
             if not call_name_node:
                 continue
 
-            called_name = call_name_node.text.decode("utf-8") if call_name_node.text else ""
+            called_name = call_name_node.text.decode("utf-8", errors="replace") if call_name_node.text else ""
             if not called_name:
                 continue
 

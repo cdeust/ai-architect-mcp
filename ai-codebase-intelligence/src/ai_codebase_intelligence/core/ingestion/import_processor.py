@@ -163,7 +163,7 @@ def process_imports(
             if source_node is None:
                 continue
 
-            raw = source_node.text.decode("utf-8").strip("'\"<>") if source_node.text else ""
+            raw = source_node.text.decode("utf-8", errors="replace").strip("'\"<>") if source_node.text else ""
 
             # Swift: module imports
             if language == SupportedLanguages.Swift and swift_config:

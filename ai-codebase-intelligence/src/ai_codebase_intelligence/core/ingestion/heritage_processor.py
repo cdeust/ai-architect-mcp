@@ -65,8 +65,8 @@ def process_heritage(
 
             # EXTENDS
             if "heritage.class" in cm and "heritage.extends" in cm:
-                class_name = cm["heritage.class"].text.decode("utf-8") if cm["heritage.class"].text else ""
-                parent_name = cm["heritage.extends"].text.decode("utf-8") if cm["heritage.extends"].text else ""
+                class_name = cm["heritage.class"].text.decode("utf-8", errors="replace") if cm["heritage.class"].text else ""
+                parent_name = cm["heritage.extends"].text.decode("utf-8", errors="replace") if cm["heritage.extends"].text else ""
 
                 child_id = (
                     symbol_table.lookup_exact(file["path"], class_name)
@@ -87,8 +87,8 @@ def process_heritage(
 
             # IMPLEMENTS
             if "heritage.class" in cm and "heritage.implements" in cm:
-                class_name = cm["heritage.class"].text.decode("utf-8") if cm["heritage.class"].text else ""
-                iface_name = cm["heritage.implements"].text.decode("utf-8") if cm["heritage.implements"].text else ""
+                class_name = cm["heritage.class"].text.decode("utf-8", errors="replace") if cm["heritage.class"].text else ""
+                iface_name = cm["heritage.implements"].text.decode("utf-8", errors="replace") if cm["heritage.implements"].text else ""
 
                 class_id = (
                     symbol_table.lookup_exact(file["path"], class_name)
@@ -109,8 +109,8 @@ def process_heritage(
 
             # Rust trait impl
             if "heritage.trait" in cm and "heritage.class" in cm:
-                struct_name = cm["heritage.class"].text.decode("utf-8") if cm["heritage.class"].text else ""
-                trait_name = cm["heritage.trait"].text.decode("utf-8") if cm["heritage.trait"].text else ""
+                struct_name = cm["heritage.class"].text.decode("utf-8", errors="replace") if cm["heritage.class"].text else ""
+                trait_name = cm["heritage.trait"].text.decode("utf-8", errors="replace") if cm["heritage.trait"].text else ""
 
                 struct_id = (
                     symbol_table.lookup_exact(file["path"], struct_name)

@@ -1,6 +1,7 @@
 """Pipeline orchestrator."""
 from __future__ import annotations
 
+import logging
 from typing import Any, Callable
 
 from ..._models.graph_types import (
@@ -85,17 +86,26 @@ def run_pipeline_from_repo(
         max_chunk = max(len(c) for c in chunks) if chunks else AST_CACHE_CAP
         ast_cache = create_ast_cache(max_chunk)
 
-        # Parse
-        process_parsing(graph, chunk_files, symbol_table, ast_cache)
-
-        # Imports
-        process_imports(graph, chunk_files, ast_cache, import_map, repo_root=repo_path, all_paths=all_paths)
-
-        # Calls
-        process_calls(graph, chunk_files, ast_cache, symbol_table, import_map)
-
-        # Heritage
-        process_heritage(graph, chunk_files, ast_cache, symbol_table)
+        # Each phase is wrapped so one bad file (encoding glitch,
+        # tree-sitter edge case, etc.) cannot kill the whole index.
+        # The graph is preserved up to the point of failure for the
+        # remaining chunks.
+        try:
+            process_parsing(graph, chunk_files, symbol_table, ast_cache)
+        except (UnicodeDecodeError, ValueError, RuntimeError) as exc:
+            logging.warning("parsing chunk %d failed: %s", chunk_idx, exc)
+        try:
+            process_imports(graph, chunk_files, ast_cache, import_map, repo_root=repo_path, all_paths=all_paths)
+        except (UnicodeDecodeError, ValueError, RuntimeError) as exc:
+            logging.warning("imports chunk %d failed: %s", chunk_idx, exc)
+        try:
+            process_calls(graph, chunk_files, ast_cache, symbol_table, import_map)
+        except (UnicodeDecodeError, ValueError, RuntimeError) as exc:
+            logging.warning("calls chunk %d failed: %s", chunk_idx, exc)
+        try:
+            process_heritage(graph, chunk_files, ast_cache, symbol_table)
+        except (UnicodeDecodeError, ValueError, RuntimeError) as exc:
+            logging.warning("heritage chunk %d failed: %s", chunk_idx, exc)
 
         files_parsed += len(chunk_files)
         pct = 20 + int((files_parsed / max(total_parseable, 1)) * 62)

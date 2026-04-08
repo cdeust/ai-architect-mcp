@@ -97,7 +97,7 @@ def _find_enclosing_function(
                         if c.type in ("identifier", "property_identifier", "simple_identifier"):
                             name_node = c
                             break
-                func_name = name_node.text.decode("utf-8") if name_node and name_node.text else None
+                func_name = name_node.text.decode("utf-8", errors="replace") if name_node and name_node.text else None
 
             elif current.type == "method_definition":
                 name_node = current.child_by_field_name("name")
@@ -106,7 +106,7 @@ def _find_enclosing_function(
                         if c.type == "property_identifier":
                             name_node = c
                             break
-                func_name = name_node.text.decode("utf-8") if name_node and name_node.text else None
+                func_name = name_node.text.decode("utf-8", errors="replace") if name_node and name_node.text else None
                 label = "Method"
 
             elif current.type in ("method_declaration", "constructor_declaration"):
@@ -116,7 +116,7 @@ def _find_enclosing_function(
                         if c.type == "identifier":
                             name_node = c
                             break
-                func_name = name_node.text.decode("utf-8") if name_node and name_node.text else None
+                func_name = name_node.text.decode("utf-8", errors="replace") if name_node and name_node.text else None
                 label = "Method"
 
             elif current.type in ("arrow_function", "function_expression"):
@@ -128,7 +128,7 @@ def _find_enclosing_function(
                             if c.type == "identifier":
                                 name_node = c
                                 break
-                    func_name = name_node.text.decode("utf-8") if name_node and name_node.text else None
+                    func_name = name_node.text.decode("utf-8", errors="replace") if name_node and name_node.text else None
 
             if func_name:
                 node_id = symbol_table.lookup_exact(file_path, func_name)
