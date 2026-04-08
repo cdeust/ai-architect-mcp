@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from typing import Any, Callable
 
-from ...config.ignore_service import should_ignore_path
+from ...config.ignore_service import DEFAULT_IGNORE_LIST, should_ignore_path
 
 READ_CONCURRENCY = 32
 MAX_FILE_SIZE = 512 * 1024  # 512KB
@@ -17,6 +17,11 @@ def walk_repository_paths(
     root = Path(repo_path)
     all_files: list[str] = []
     for dirpath, dirnames, filenames in os.walk(root):
+        # Prune in-place so os.walk does not descend into ignored dirs.
+        # Without this, ignored trees (e.g. .pipeline-worktrees with 5GB
+        # of duplicated source) are still fully traversed, then filtered
+        # at the file level — wasted I/O and a source of indexing bugs.
+        dirnames[:] = [d for d in dirnames if d not in DEFAULT_IGNORE_LIST]
         rel_dir = os.path.relpath(dirpath, root)
         for fn in filenames:
             rel = os.path.join(rel_dir, fn).replace("\\", "/")

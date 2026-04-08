@@ -88,6 +88,13 @@ DEFAULT_IGNORE_LIST: frozenset[str] = frozenset({
     "fixtures",  # Test fixtures
     "snapshots",  # Jest snapshots
     "__snapshots__",
+    # Pipeline worktrees & state — never index these. Prior YOLO runs
+    # created N copies of the source tree under .pipeline-worktrees/,
+    # inflating impact analysis blast radius ~Nx.
+    ".pipeline-worktrees",
+    ".pipeline-worktree",
+    ".pipeline",
+    "_pipeline",
 })
 
 IGNORED_EXTENSIONS: frozenset[str] = frozenset({
