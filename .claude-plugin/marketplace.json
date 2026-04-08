@@ -24,6 +24,22 @@
       "keywords": ["mcp", "ai-architect", "verification", "prd", "autonomous-engineering", "code-generation", "claude-code", "anthropic"],
       "category": "development",
       "runtime": ["cli"]
+    },
+    {
+      "name": "ai-codebase-intelligence",
+      "source": "./ai-codebase-intelligence",
+      "description": "Language-agnostic codebase intelligence engine — 17 MCP tools, tree-sitter parsing for 13 languages, typed Pydantic graph API, BM25 + RRF hybrid search, and 5 science-backed git analytics (ownership, bus factor, churn, cochange, dead code).",
+      "version": "0.1.0",
+      "author": {
+        "name": "Clement Deust",
+        "email": "admin@ai-architect.tools"
+      },
+      "homepage": "https://github.com/cdeust/ai-architect-mcp",
+      "repository": "https://github.com/cdeust/ai-architect-mcp",
+      "license": "MIT",
+      "keywords": ["mcp", "codebase-intelligence", "static-analysis", "tree-sitter", "graph", "git-analytics", "claude-code", "anthropic"],
+      "category": "development",
+      "runtime": ["cli"]
     }
   ]
 }

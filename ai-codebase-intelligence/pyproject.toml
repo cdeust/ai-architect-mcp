@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ai-codebase-intelligence"
+name = "ai-automated-codebase-intelligence"
 version = "0.1.0"
 description = "Language-agnostic codebase intelligence engine with MCP integration"
 readme = "README.md"
@@ -58,11 +58,12 @@ dev = [
     "pytest-asyncio>=0.23",
 ]
 all = [
-    "ai-codebase-intelligence[embeddings,server,dev]",
+    "ai-automated-codebase-intelligence[embeddings,server,dev]",
 ]
 
 [project.scripts]
 ai-codebase-intelligence = "ai_codebase_intelligence._cli:app"
+ai_codebase_intelligence_mcp = "ai_codebase_intelligence._server_entry:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ai_codebase_intelligence"]

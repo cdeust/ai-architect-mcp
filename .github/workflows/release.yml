@@ -15,21 +15,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full clone so test_git_diff can resolve `main...HEAD`
+          fetch-depth: 0
+
+      - name: Create local main ref
+        # When CI checks out the v* tag we are in detached HEAD; only
+        # origin/main exists, not a local `main` branch. test_git_diff
+        # asks for `git diff main...HEAD`, which needs a local ref.
+        run: git branch -f main origin/main
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
+      - name: Install ai-architect (mcp) with dev extras
         working-directory: mcp
         run: pip install -e ".[dev]"
 
       - name: Run tests
         run: pytest --tb=short -q
 
-  build:
-    name: Build
+  build-mcp:
+    name: Build ai-automated-pipeline
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -50,12 +59,37 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist
+          name: dist-mcp
           path: mcp/dist/
 
-  publish-pypi:
-    name: Publish to PyPI
-    needs: build
+  build-codebase-intel:
+    name: Build ai-codebase-intelligence
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: pip install build
+
+      - name: Build sdist and wheel
+        working-directory: ai-codebase-intelligence
+        run: python -m build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-codebase-intel
+          path: ai-codebase-intelligence/dist/
+
+  publish-mcp:
+    name: Publish ai-automated-pipeline to PyPI
+    needs: build-mcp
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -64,7 +98,26 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: dist
+          name: dist-mcp
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
+
+  publish-codebase-intel:
+    name: Publish ai-codebase-intelligence to PyPI
+    needs: build-codebase-intel
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/ai-automated-codebase-intelligence
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-codebase-intel
           path: dist/
 
       - name: Publish to PyPI
@@ -74,17 +127,23 @@ jobs:
 
   github-release:
     name: GitHub Release
-    needs: build
+    needs: [build-mcp, build-codebase-intel]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Download build artifacts
+      - name: Download mcp artifacts
         uses: actions/download-artifact@v4
         with:
-          name: dist
+          name: dist-mcp
+          path: dist/
+
+      - name: Download codebase-intel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-codebase-intel
           path: dist/
 
       - name: Generate changelog

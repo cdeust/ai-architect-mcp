@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "ai-automated-pipeline"
 version = "0.1.0"
 description = "Autonomous software engineering pipeline — 49 MCP tools, 64 verification rules, 11 pipeline stages"
-readme = "../README.md"
+readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12"
 authors = [
@@ -38,6 +38,13 @@ dependencies = [
     "fastmcp>=2.0",
     "pydantic>=2.0",
     "anthropic",
+    "scipy>=1.11",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
 ]
 
 [project.urls]
@@ -47,3 +54,13 @@ Issues = "https://github.com/cdeust/ai-architect-mcp/issues"
 
 [project.scripts]
 ai_architect_mcp = "ai_architect_mcp.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["ai_architect_mcp"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "ai_architect_mcp",
+    "README.md",
+    "pyproject.toml",
+]
