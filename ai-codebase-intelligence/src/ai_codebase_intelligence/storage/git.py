@@ -28,6 +28,7 @@ def get_current_commit(repo_path: str) -> str:
         result = subprocess.run(
             ["git", "rev-parse", "HEAD"],
             cwd=repo_path, capture_output=True, text=True, check=True,
+            encoding="utf-8", errors="replace",
         )
         return result.stdout.strip()
     except (subprocess.CalledProcessError, OSError):
@@ -40,6 +41,7 @@ def get_git_root(from_path: str) -> str | None:
         result = subprocess.run(
             ["git", "rev-parse", "--show-toplevel"],
             cwd=from_path, capture_output=True, text=True, check=True,
+            encoding="utf-8", errors="replace",
         )
         raw = result.stdout.strip()
         return os.path.abspath(raw)
@@ -69,6 +71,7 @@ def git_log_commits(
             ["git", "log", f"--max-count={max_commits}",
              "--pretty=format:%H\t%aN\t%aE\t%aI", "--name-only"],
             cwd=repo_path, capture_output=True, text=True, check=True,
+            encoding="utf-8", errors="replace",
         )
     except (subprocess.CalledProcessError, OSError):
         return []
@@ -121,6 +124,7 @@ def git_blame_file(
         result = subprocess.run(
             ["git", "blame", "--line-porcelain", "--", file_path],
             cwd=repo_path, capture_output=True, text=True, check=True,
+            encoding="utf-8", errors="replace",
         )
     except (subprocess.CalledProcessError, OSError):
         return []
@@ -175,6 +179,7 @@ def git_file_churn(
             ["git", "log", f"--max-count={max_commits}",
              "--pretty=format:", "--numstat", "--follow", "--", file_path],
             cwd=repo_path, capture_output=True, text=True, check=True,
+            encoding="utf-8", errors="replace",
         )
     except (subprocess.CalledProcessError, OSError):
         return {"churn_count": 0, "lines_added": 0, "lines_deleted": 0}
