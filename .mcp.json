@@ -2,11 +2,11 @@
   "mcpServers": {
     "ai-architect": {
       "command": "uvx",
-      "args": ["--python", "3.12", "--refresh", "--from", "./mcp", "ai_architect_mcp"]
+      "args": ["--python", "3.12", "--reinstall", "--refresh", "--from", "./mcp", "ai_architect_mcp"]
     },
     "ai-codebase-intelligence": {
       "command": "uvx",
-      "args": ["--python", "3.12", "--refresh", "--from", "./ai-codebase-intelligence", "ai_codebase_intelligence_mcp"]
+      "args": ["--python", "3.12", "--reinstall", "--refresh", "--from", "./ai-codebase-intelligence", "ai_codebase_intelligence_mcp"]
     }
   }
 }
