@@ -5,6 +5,7 @@ from typing import Any, Callable
 
 import tree_sitter
 
+from ..._models.graph_types import GraphNode, GraphRelationship, NodeLabel, RelationshipType
 from ...lib.utils import generate_id
 from ..tree_sitter.parser_loader import load_language
 from .language_queries import LANGUAGE_QUERIES
@@ -112,21 +113,34 @@ def process_parsing_sequential(
                 props["astFrameworkMultiplier"] = framework_hint.get("entryPointMultiplier", 1.0)
                 props["astFrameworkReason"] = framework_hint.get("reason", "")
 
-            node = {"id": node_id, "label": node_label, "properties": props}
-            graph.add_node(node)
+            try:
+                node_label_enum = NodeLabel(node_label)
+            except ValueError:
+                node_label_enum = NodeLabel.CODE_ELEMENT
+            typed_node = GraphNode(
+                id=node_id,
+                label=node_label_enum,
+                name=node_name,
+                file_path=file["path"],
+                start_line=props.get("startLine", 0),
+                end_line=props.get("endLine", 0),
+                language=language,
+                is_exported=props.get("isExported", False),
+                properties={
+                    k: v for k, v in props.items()
+                    if k not in {"name", "filePath", "startLine", "endLine", "language", "isExported"}
+                },
+            )
+            graph.add_node(typed_node)
             symbol_table.add(file["path"], node_name, node_id, node_label)
 
             file_id = generate_id("File", file["path"])
-            rel_id = generate_id("DEFINES", f"{file_id}->{node_id}")
-            relationship = {
-                "id": rel_id,
-                "sourceId": file_id,
-                "targetId": node_id,
-                "type": "DEFINES",
-                "confidence": 1.0,
-                "reason": "",
-            }
-            graph.add_relationship(relationship)
+            graph.add_relationship(GraphRelationship(
+                source_id=file_id,
+                target_id=node_id,
+                relationship_type=RelationshipType.DEFINES,
+                confidence=1.0,
+            ))
 
 
 def process_parsing(
