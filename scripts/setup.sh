@@ -42,24 +42,35 @@ info "Python $PY_VERSION detected"
   || fail "Missing CLAUDE.md — run from the ai-architect repo root."
 info "Repository structure verified"
 
-# ── 3. Install MCP servers ────────────────────────────────────────────────
+# ── 3. Install MCP servers (editable, isolated venvs via uv) ──────────────
 
-pip install -e "$REPO_ROOT/mcp/" --quiet 2>/dev/null \
-  || pip install -e "$REPO_ROOT/mcp/" 2>&1
-info "ai-architect MCP server installed (pipeline orchestration)"
+# `uv tool install --editable` is the failsafe for source-tree development:
+# the tool's venv links the live source via .pth, so any edit to ./mcp/ or
+# ./ai-codebase-intelligence/ is picked up on the next MCP server launch
+# with no rebuild, no cache invalidation, no --refresh / --reinstall dance.
+# Each tool gets its own venv that respects the package's pyproject.toml
+# constraints (e.g. tree-sitter<0.25), unlike `pip install -e` against the
+# system Python.
 
-# Verify entry point works
+if ! command -v uv &>/dev/null; then
+  fail "uv is not installed. Install it: https://docs.astral.sh/uv/getting-started/installation/"
+fi
+info "uv $(uv --version | awk '{print $2}') detected"
+
+uv tool install --editable "$REPO_ROOT/mcp" --force --quiet 2>/dev/null \
+  || uv tool install --editable "$REPO_ROOT/mcp" --force 2>&1
+info "ai-architect MCP server installed (editable)"
+
 if command -v ai_architect_mcp &>/dev/null; then
   info "Entry point 'ai_architect_mcp' available on PATH"
 else
-  warn "Entry point not on PATH — use 'python3 -m ai_architect_mcp.server' instead"
+  warn "Entry point not on PATH — ensure ~/.local/bin is in \$PATH"
 fi
 
-# Install ai-codebase-intelligence (the typed graph engine + git analytics)
 if [ -f "$REPO_ROOT/ai-codebase-intelligence/pyproject.toml" ]; then
-  pip install -e "$REPO_ROOT/ai-codebase-intelligence/" --quiet 2>/dev/null \
-    || pip install -e "$REPO_ROOT/ai-codebase-intelligence/" 2>&1
-  info "ai-codebase-intelligence MCP server installed (17 tools)"
+  uv tool install --editable "$REPO_ROOT/ai-codebase-intelligence" --force --quiet 2>/dev/null \
+    || uv tool install --editable "$REPO_ROOT/ai-codebase-intelligence" --force 2>&1
+  info "ai-codebase-intelligence MCP server installed (editable, 17 tools)"
 else
   warn "ai-codebase-intelligence/ not found — codebase tools will be unavailable"
 fi
