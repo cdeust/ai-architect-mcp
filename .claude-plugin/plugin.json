@@ -1,7 +1,7 @@
 {
   "name": "ai-architect",
   "description": "Autonomous software engineering pipeline for Claude Code — 11 stages, 49 MCP tools, 64 verification rules. Skills define WHAT, tools define HOW, hooks enforce constraints.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "Clement Deust",
     "email": "admin@ai-architect.tools"
@@ -12,8 +12,18 @@
   "keywords": ["mcp", "ai-architect", "verification", "prd", "autonomous-engineering", "claude-code", "anthropic"],
   "mcpServers": {
     "ai-architect": {
-      "command": "uvx",
-      "args": ["--python", "3.12", "--from", "ai-automated-pipeline", "ai_architect_mcp"]
+      "command": "python3",
+      "args": [
+        "-c",
+        "import json,os; p=json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))['plugins']['ai-architect@ai-architect-plugins'][0]['installPath']; os.execvp('uvx',['uvx','--python','3.12','--from',os.path.join(p,'mcp'),'ai_architect_mcp'])"
+      ]
+    },
+    "ai-codebase-intelligence": {
+      "command": "python3",
+      "args": [
+        "-c",
+        "import json,os; p=json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))['plugins']['ai-architect@ai-architect-plugins'][0]['installPath']; os.execvp('uvx',['uvx','--python','3.12','--from',os.path.join(p,'ai-codebase-intelligence'),'ai_codebase_intelligence_mcp'])"
+      ]
     }
   },
   "hooks": {
