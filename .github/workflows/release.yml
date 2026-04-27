@@ -105,6 +105,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           verbose: true
+          skip-existing: true
 
   publish-codebase-intel:
     name: Publish ai-codebase-intelligence to PyPI
@@ -124,6 +125,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           verbose: true
+          skip-existing: true
 
   github-release:
     name: GitHub Release

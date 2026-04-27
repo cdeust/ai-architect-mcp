@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ai-automated-codebase-intelligence"
-version = "0.1.0"
+version = "0.1.2"
 description = "Language-agnostic codebase intelligence engine with MCP integration"
 readme = "README.md"
 license = "MIT"
@@ -23,19 +23,22 @@ classifiers = [
 ]
 dependencies = [
     "fastmcp>=2.0",
+    # tree-sitter pinned <0.25 because 0.25.x removed Query.matches/captures.
+    # Language packages must stay <0.25 too — their 0.25.0 wheels ship grammars
+    # compiled for ABI v15 which require tree-sitter >=0.25 to load.
     "tree-sitter>=0.22,<0.25",
-    "tree-sitter-python>=0.23",
-    "tree-sitter-javascript>=0.23",
-    "tree-sitter-typescript>=0.23",
-    "tree-sitter-java>=0.23",
+    "tree-sitter-python>=0.23,<0.25",
+    "tree-sitter-javascript>=0.23,<0.25",
+    "tree-sitter-typescript>=0.23,<0.25",
+    "tree-sitter-java>=0.23,<0.25",
     "tree-sitter-kotlin>=1.0",
-    "tree-sitter-c-sharp>=0.23",
-    "tree-sitter-go>=0.23",
-    "tree-sitter-rust>=0.23",
-    "tree-sitter-php>=0.23",
-    "tree-sitter-ruby>=0.23",
-    "tree-sitter-c>=0.23",
-    "tree-sitter-cpp>=0.23",
+    "tree-sitter-c-sharp>=0.23,<0.25",
+    "tree-sitter-go>=0.23,<0.25",
+    "tree-sitter-rust>=0.23,<0.25",
+    "tree-sitter-php>=0.23,<0.25",
+    "tree-sitter-ruby>=0.23,<0.25",
+    "tree-sitter-c>=0.23,<0.25",
+    "tree-sitter-cpp>=0.23,<0.25",
     "tree-sitter-swift>=0.0.1",
     "kuzu>=0.4",
     "pydantic>=2.0",
